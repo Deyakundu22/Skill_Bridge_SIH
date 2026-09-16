@@ -21,8 +21,6 @@ import {
   approveSkillRequest,
   rejectSkillRequest,
 } from "../controllers/assessment.controller.js";
-console.log("🚨🚨🚨 LOADED ASSESSMENT ROUTES FILE 🚨🚨🚨");
-console.log("📍 FILE:", import.meta.url);
 const router = Router();
 
 // ==========================================
@@ -128,15 +126,5 @@ router.put(
   authenticateToken,
   requireAdmin,
   rejectSkillRequest,
-);
-
-console.log(
-  "🔥 BULK ROUTE DEFINITIONS:",
-  router.stack
-    .filter((layer: any) => layer.route)
-    .map((layer: any) => ({
-      path: layer.route.path,
-      methods: Object.keys(layer.route.methods),
-    })),
 );
 export default router;
