@@ -18,7 +18,7 @@ import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { API_BASE_URL } from "../config/api";
 import { InstitutionSelectCombobox } from "../components/common/InstitutionSelectCombobox";
-import "./Auth.css"; // Make sure to import the new CSS file!
+import "./Auth.css";
 
 const Auth: React.FC = () => {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -238,7 +238,7 @@ const Auth: React.FC = () => {
         <div className="neo-brand-panel">
           <div className="brand-header flex items-center gap-4">
             <div>
-              <h2 className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-sky-400 via-teal-400 to-emerald-400 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(56,189,248,0.25)]">
+              <h2 className="text-2xl font-extrabold tracking-tight bg-gradient-to-r">
                 SkillBridge
               </h2>
               <p className="brand-subtitle">Bridge Skills. Build Careers.</p>

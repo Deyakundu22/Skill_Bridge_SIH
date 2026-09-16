@@ -24,7 +24,7 @@ const items: CollaborationItem[] = [
     id: "collab-hub",
     title: "Academia–Industry Initiatives",
     text: "Join live mentorships, guest lectures & industry workshops",
-    icon: <Handshake size={20} className="text-indigo-400" />,
+    icon: <Handshake size={20} className="text-[var(--primary)]" />,
     route: "/collaborations",
     isComingSoon: false,
   },
@@ -32,7 +32,7 @@ const items: CollaborationItem[] = [
     id: "executive-mentorship",
     title: "1-on-1 Executive Mentorship",
     text: "Direct personalized guidance from senior industry leaders",
-    icon: <Users size={20} className="text-slate-400" />,
+    icon: <Users size={20} className="text-[var(--text-muted)]" />,
     route: "/coming-soon",
     isComingSoon: true,
     tagText: "Coming Soon",
@@ -41,7 +41,7 @@ const items: CollaborationItem[] = [
     id: "sponsored-hackathons",
     title: "Sponsored Code Sprints",
     text: "Compete in company-backed hackathons & win opportunities",
-    icon: <Trophy size={20} className="text-slate-400" />,
+    icon: <Trophy size={20} className="text-[var(--text-muted)]" />,
     route: "/coming-soon",
     isComingSoon: true,
     tagText: "Coming Soon",
@@ -50,7 +50,7 @@ const items: CollaborationItem[] = [
     id: "faculty-exchange",
     title: "Faculty Immersion Exchange",
     text: "Industry exchange & upskilling programs for academicians",
-    icon: <GraduationCap size={20} className="text-slate-400" />,
+    icon: <GraduationCap size={20} className="text-[var(--text-muted)]" />,
     route: "/coming-soon",
     isComingSoon: true,
     tagText: "Coming Soon",
@@ -64,16 +64,17 @@ const Collaboration: React.FC = () => {
     <section className="panel space-y-4">
       <div className="section-heading flex items-center justify-between">
         <div>
-          <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
+          <h2 className="text-base font-bold text-[var(--text-primary)] flex items-center gap-2">
             <span>Industry–Academia Collaboration</span>
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
+
+          <p className="text-xs text-[var(--text-muted)] mt-0.5">
             Real connections. Real industry impact.
           </p>
         </div>
 
         <button
-          className="text-btn cursor-pointer text-xs font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors"
+          className="text-btn cursor-pointer text-xs font-semibold text-[var(--primary)] hover:text-[var(--primary-hover)] flex items-center gap-1 transition-colors"
           onClick={() => navigate("/collaborations")}
         >
           <span>Explore All</span>
@@ -88,12 +89,12 @@ const Collaboration: React.FC = () => {
             onClick={() => navigate(item.route)}
             className={`group relative p-4 rounded-xl border transition-all duration-200 flex flex-col justify-between cursor-pointer ${
               item.isComingSoon
-                ? "bg-slate-900/40 border-slate-800/60 hover:border-slate-700 hover:bg-slate-900/60"
-                : "bg-slate-900/80 border-indigo-500/30 hover:border-indigo-500/60 hover:bg-slate-900 shadow-sm hover:shadow-indigo-500/10"
+                ? "bg-[var(--bg-muted)] border-[var(--border-subtle)] hover:border-[var(--border-color-hover)] hover:bg-[var(--bg-card-hover)]"
+                : "bg-[var(--bg-card)] border-[var(--primary-border)] hover:border-[var(--primary)] hover:bg-[var(--bg-card-hover)] shadow-sm hover:shadow-[var(--shadow-md)]"
             }`}
           >
             {item.isComingSoon && (
-              <span className="absolute top-3 right-3 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-amber-400 border border-amber-500/20">
+              <span className="absolute top-3 right-3 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--accent-amber-bg)] text-[var(--accent-amber)] border border-[var(--accent-amber)]/20">
                 {item.tagText || "Coming Soon"}
               </span>
             )}
@@ -102,8 +103,8 @@ const Collaboration: React.FC = () => {
               <div
                 className={`w-10 h-10 rounded-lg flex items-center justify-center transition-transform group-hover:scale-105 ${
                   item.isComingSoon
-                    ? "bg-slate-800/80 text-slate-400"
-                    : "bg-indigo-500/15 text-indigo-400 border border-indigo-500/20"
+                    ? "bg-[var(--bg-card-hover)] text-[var(--text-muted)] border border-[var(--border-subtle)]"
+                    : "bg-[var(--primary-subtle)] text-[var(--primary)] border border-[var(--primary-border)]"
                 }`}
               >
                 {item.icon}
@@ -113,34 +114,36 @@ const Collaboration: React.FC = () => {
                 <h3
                   className={`text-xs font-bold leading-snug transition-colors ${
                     item.isComingSoon
-                      ? "text-slate-300 group-hover:text-slate-100"
-                      : "text-slate-100 group-hover:text-indigo-300"
+                      ? "text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]"
+                      : "text-[var(--text-primary)] group-hover:text-[var(--primary)]"
                   }`}
                 >
                   {item.title}
                 </h3>
-                <p className="text-[11px] text-slate-400 mt-1 leading-relaxed line-clamp-2">
+
+                <p className="text-[11px] text-[var(--text-muted)] mt-1 leading-relaxed line-clamp-2">
                   {item.text}
                 </p>
               </div>
             </div>
 
-            <div className="pt-3 mt-2 border-t border-slate-800/50 flex items-center justify-between text-[11px]">
+            <div className="pt-3 mt-2 border-t border-[var(--border-subtle)] flex items-center justify-between text-[11px]">
               <span
                 className={`font-medium flex items-center gap-1 ${
                   item.isComingSoon
-                    ? "text-slate-500 group-hover:text-slate-400"
-                    : "text-indigo-400 group-hover:text-indigo-300 font-semibold"
+                    ? "text-[var(--text-muted)] group-hover:text-[var(--text-secondary)]"
+                    : "text-[var(--primary)] group-hover:text-[var(--primary-hover)] font-semibold"
                 }`}
               >
                 {item.isComingSoon ? "Preview Feature" : "Explore Hub"}
               </span>
+
               <ExternalLink
                 size={12}
                 className={
                   item.isComingSoon
-                    ? "text-slate-600"
-                    : "text-indigo-400 group-hover:translate-x-0.5 transition-transform"
+                    ? "text-[var(--text-disabled)]"
+                    : "text-[var(--primary)] group-hover:translate-x-0.5 transition-transform"
                 }
               />
             </div>

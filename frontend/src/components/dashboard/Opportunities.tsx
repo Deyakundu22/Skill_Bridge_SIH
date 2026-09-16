@@ -161,105 +161,123 @@ const Opportunities: React.FC = () => {
     );
   };
 
-  return (
-    <section className="right-card">
-      <div className="section-heading flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2>Top Opportunities</h2>
-            <button
-              onClick={() => fetchTopOpportunities(true)}
-              disabled={refreshing || loading}
-              className="p-1 text-slate-400 hover:text-indigo-400 hover:bg-slate-800/60 rounded-lg transition-all cursor-pointer disabled:opacity-50"
-              title="Refresh opportunities"
-            >
-              <RotateCw size={15} className={refreshing ? "animate-spin text-indigo-400" : ""} />
-            </button>
-          </div>
-          <p>Matched for your skill profile</p>
+ return (
+  <section className="right-card">
+    <div className="section-heading flex items-center justify-between">
+      <div>
+        <div className="flex items-center gap-2">
+          <h2>Top Opportunities</h2>
+          <button
+            onClick={() => fetchTopOpportunities(true)}
+            disabled={refreshing || loading}
+            className="p-1 text-[var(--text-muted)] hover:text-[var(--primary)] hover:bg-[var(--bg-card-hover)] rounded-lg transition-all cursor-pointer disabled:opacity-50"
+            title="Refresh opportunities"
+          >
+            <RotateCw size={15} className={refreshing ? "animate-spin text-[var(--primary)]" : ""} />
+          </button>
         </div>
-
-        <button
-          className="text-btn cursor-pointer"
-          onClick={() => navigate("/opportunities")}
-        >
-          View all
-        </button>
-      </div>
-
-      <div className="opportunities">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-6 text-slate-400 text-xs space-y-2">
-            <Loader2 className="animate-spin text-indigo-400" size={20} />
-            <span>Calculating match score...</span>
-          </div>
-        ) : error || opportunitiesList.length === 0 ? (
-          <div className="p-4 text-center text-slate-400 text-xs border border-slate-800/60 rounded-xl bg-slate-900/40">
-            <Building2 size={24} className="mx-auto mb-1 text-slate-500 opacity-60" />
-            <p className="font-medium text-slate-300">No opportunities available</p>
-            <span className="text-[11px] text-slate-500">Check back later for new industry listings.</span>
-          </div>
-        ) : (
-          opportunitiesList.map((job) => (
-            <div
-              className="opportunity cursor-pointer hover:border-indigo-500/40 hover:bg-slate-800/40 transition-all group"
-              key={job.id}
-              onClick={() => handleOpportunityClick(job)}
-              title="Click to view full details"
-            >
-              <div className="company-logo flex items-center justify-center font-bold text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 group-hover:border-indigo-500/40">
-                {job.company_logo ? (
-                  <img
-                    src={job.company_logo}
-                    alt={job.company_name || "Company"}
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                ) : (
-                  (job.company_name || "C").charAt(0).toUpperCase()
-                )}
-              </div>
-
-              <div className="job-info flex-1 min-w-0">
-                <h3 className="truncate text-slate-100 group-hover:text-indigo-400 transition-colors">
-                  {job.title}
-                </h3>
-                <p className="truncate text-slate-400">{job.company_name || "Verified Partner"}</p>
-                <div className="job-meta">
-                  <span>
-                    {job.work_mode}
-                    {job.location ? ` • ${job.location}` : ""}
-                  </span>
-                  <span>{formatCompensation(job.stipend_min, job.stipend_max, job.type)}</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col items-end gap-1.5 shrink-0">
-                {renderMatchPill(job)}
-                <span className="text-[10px] text-indigo-400 font-semibold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Eye size={10} /> Details
-                </span>
-              </div>
-            </div>
-          ))
-        )}
+        <p>Matched for your skill profile</p>
       </div>
 
       <button
-        className="see-more cursor-pointer"
+        className="text-btn cursor-pointer"
         onClick={() => navigate("/opportunities")}
       >
-        View more opportunities
-        <ArrowRight size={15} />
+        View all
       </button>
+    </div>
 
-      {/* OPPORTUNITY DETAILS MODAL IN STUDENT DASHBOARD */}
-      <OpportunityDetailModal
-        isOpen={isDetailModalOpen}
-        onClose={() => setIsDetailModalOpen(false)}
-        opportunity={selectedOpportunity}
-      />
-    </section>
-  );
+    <div className="opportunities">
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-6 text-[var(--text-muted)] text-xs space-y-2">
+          <Loader2 className="animate-spin text-[var(--primary)]" size={20} />
+          <span>Calculating match score...</span>
+        </div>
+      ) : error || opportunitiesList.length === 0 ? (
+        <div className="p-4 text-center text-[var(--text-muted)] text-xs border border-[var(--border-subtle)] rounded-xl bg-[var(--bg-muted)]">
+          <Building2
+            size={24}
+            className="mx-auto mb-1 text-[var(--text-muted)] opacity-60"
+          />
+          <p className="font-medium text-[var(--text-primary)]">
+            No opportunities available
+          </p>
+          <span className="text-[11px] text-[var(--text-muted)]">
+            Check back later for new industry listings.
+          </span>
+        </div>
+      ) : (
+        opportunitiesList.map((job) => (
+          <div
+            className="opportunity cursor-pointer border border-[var(--border-subtle)] bg-[var(--bg-card)] hover:border-[var(--primary-border)] hover:bg-[var(--bg-card-hover)] transition-all group"
+            key={job.id}
+            onClick={() => handleOpportunityClick(job)}
+            title="Click to view full details"
+          >
+            <div className="company-logo flex items-center justify-center font-bold text-[var(--primary)] bg-[var(--primary-subtle)] border border-[var(--primary-border)] group-hover:border-[var(--primary)]">
+              {job.company_logo ? (
+                <img
+                  src={job.company_logo}
+                  alt={job.company_name || "Company"}
+                  className="w-full h-full object-cover rounded-lg"
+                />
+              ) : (
+                (job.company_name || "C").charAt(0).toUpperCase()
+              )}
+            </div>
+
+            <div className="job-info flex-1 min-w-0">
+              <h3 className="truncate text-[var(--text-primary)] group-hover:text-[var(--primary)] transition-colors">
+                {job.title}
+              </h3>
+
+              <p className="truncate text-[var(--text-secondary)]">
+                {job.company_name || "Verified Partner"}
+              </p>
+
+              <div className="job-meta text-[var(--text-muted)]">
+                <span>
+                  {job.work_mode}
+                  {job.location ? ` • ${job.location}` : ""}
+                </span>
+
+                <span>
+                  {formatCompensation(
+                    job.stipend_min,
+                    job.stipend_max,
+                    job.type
+                  )}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-end gap-1.5 shrink-0">
+              {renderMatchPill(job)}
+
+              <span className="text-[10px] text-[var(--primary)] font-semibold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Eye size={10} /> Details
+              </span>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+
+    <button
+      className="see-more cursor-pointer"
+      onClick={() => navigate("/opportunities")}
+    >
+      View more opportunities
+      <ArrowRight size={15} />
+    </button>
+
+    <OpportunityDetailModal
+      isOpen={isDetailModalOpen}
+      onClose={() => setIsDetailModalOpen(false)}
+      opportunity={selectedOpportunity}
+    />
+  </section>
+);
 };
 
 export default Opportunities;

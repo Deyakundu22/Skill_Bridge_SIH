@@ -1,7 +1,7 @@
-/* Auth.css - Aurora / Oceanic Glassmorphism Design */
+
 
 :root {
-  /* New Colors: Oceanic Blue & Mint Green */
+
   --auth-accent: #0ea5e9; /* Sky Blue */
   --auth-accent-hover: #0284c7;
   --auth-gradient: linear-gradient(
@@ -25,6 +25,7 @@
   overflow: hidden;
   background-color: #f4efec; /* Slate 100 */
   transition: background-color 0.3s ease;
+  color: #0f172a;
   font-family:
     "Inter",
     system-ui,
