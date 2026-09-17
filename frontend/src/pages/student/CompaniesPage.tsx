@@ -94,7 +94,10 @@ const CompaniesPage: React.FC = () => {
   }, [searchTerm, selectedSector]);
 
   useEffect(() => {
-    fetchCompanies();
+    // React warns about state updates from effects, but this fetch is the
+    // required mount-time data load for the companies directory.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchCompanies();
   }, [fetchCompanies]);
 
   const sectors = Array.from(
@@ -104,7 +107,7 @@ const CompaniesPage: React.FC = () => {
   return (
     <MainLayout showRightPanel={false}>
       <div className="w-full max-w-7xl mx-auto px-4 py-6 space-y-6">
-        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-[var(--shadow-lg)]">
+        <div className="bg-(--bg-card) border border-[var(--border-color)] rounded-2xl p-6 shadow-[var(--shadow-lg)]">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="p-3.5 bg-[var(--primary-subtle)] border border-[var(--primary-border)] rounded-2xl text-[var(--primary)] shrink-0">
@@ -129,7 +132,7 @@ const CompaniesPage: React.FC = () => {
 
             <div className="flex items-center gap-3">
               <div className="px-4 py-2 bg-[var(--bg-muted)] border border-[var(--border-color)] rounded-xl text-center">
-                <span className="text-xs text-[var(--text-muted)] block font-medium">
+                <span className="text-xs text-(--text-muted) block font-medium">
                   Verified Partners
                 </span>
 
@@ -140,7 +143,7 @@ const CompaniesPage: React.FC = () => {
               </div>
 
               <div className="px-4 py-2 bg-[var(--accent-emerald-bg)] border border-[var(--accent-emerald)]/30 rounded-xl text-center">
-                <span className="text-xs text-[var(--text-muted)] block font-medium">
+                <span className="text-xs text-(--text-muted) block font-medium">
                   Live Roles
                 </span>
 
@@ -159,13 +162,13 @@ const CompaniesPage: React.FC = () => {
           <div className="relative flex-1">
             <Search
               size={18}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-(--text-muted)"
             />
 
             <input
               type="text"
               placeholder="Search companies by name, location, or description..."
-              className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--focus-ring)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] text-sm rounded-xl pl-10 pr-4 py-2.5 transition-all outline-none"
+              className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--focus-ring)] text-[var(--text-primary)] placeholder:text-(--text-muted) text-sm rounded-xl pl-10 pr-4 py-2.5 transition-all outline-none"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -202,7 +205,7 @@ const CompaniesPage: React.FC = () => {
             <button
               onClick={fetchCompanies}
               disabled={loading}
-              className="p-2.5 bg-[var(--bg-card-hover)] hover:bg-[var(--bg-elevated)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--primary)] rounded-xl transition-all cursor-pointer disabled:opacity-50"
+              className="p-2.5 bg-(--bg-card-hover) hover:bg-[var(--bg-elevated)] border border-[var(--border-color)] text-(--text-muted) hover:text-[var(--primary)] rounded-xl transition-all cursor-pointer disabled:opacity-50"
               title="Refresh companies list"
             >
               <RotateCw
@@ -227,13 +230,13 @@ const CompaniesPage: React.FC = () => {
           <div className="flex flex-col items-center justify-center py-20 bg-[var(--bg-muted)] border border-[var(--border-color)] rounded-2xl space-y-4">
             <Loader2 className="animate-spin text-[var(--primary)]" size={36} />
 
-            <p className="text-[var(--text-muted)] text-sm font-medium">
+            <p className="text-(--text-muted) text-sm font-medium">
               Loading partner company directory...
             </p>
           </div>
         ) : companies.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 bg-[var(--bg-muted)] border border-[var(--border-color)] rounded-2xl text-center px-4">
-            <div className="p-4 bg-[var(--bg-card-hover)] rounded-2xl text-[var(--text-muted)] mb-3">
+            <div className="p-4 bg-(--bg-card-hover) rounded-2xl text-(--text-muted) mb-3">
               <Building2 size={44} />
             </div>
 
@@ -241,7 +244,7 @@ const CompaniesPage: React.FC = () => {
               No Partner Companies Found
             </h3>
 
-            <p className="text-[var(--text-muted)] text-sm max-w-md mt-1">
+            <p className="text-(--text-muted) text-sm max-w-md mt-1">
               No registered industry partners matched your current search
               filters.
             </p>
@@ -251,7 +254,7 @@ const CompaniesPage: React.FC = () => {
             {companies.map((comp) => (
               <div
                 key={comp.id}
-                className="group bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)] border border-[var(--border-color)] hover:border-[var(--primary-border)] rounded-2xl p-5 shadow-[var(--shadow-md)] hover:shadow-[var(--shadow-lg)] transition-all duration-300 flex flex-col justify-between space-y-4"
+                className="group bg-(--bg-card) hover:bg-(--bg-card-hover) border border-[var(--border-color)] hover:border-[var(--primary-border)] rounded-2xl p-5 shadow-[var(--shadow-md)] hover:shadow-[var(--shadow-lg)] transition-all duration-300 flex flex-col justify-between space-y-4"
               >
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-3">
@@ -300,7 +303,7 @@ const CompaniesPage: React.FC = () => {
                     </span>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-[var(--text-muted)]">
+                  <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-(--text-muted)">
                     {comp.location && (
                       <span className="flex items-center gap-1">
                         <MapPin size={13} className="text-[var(--primary)]" />
@@ -333,7 +336,7 @@ const CompaniesPage: React.FC = () => {
 
                   {comp.opportunities && comp.opportunities.length > 0 && (
                     <div className="pt-2 border-t border-[var(--border-subtle)] space-y-1.5">
-                      <span className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1">
+                      <span className="text-[11px] font-semibold text-(--text-muted) uppercase tracking-wider flex items-center gap-1">
                         <Sparkles
                           size={11}
                           className="text-[var(--accent-amber)]"
@@ -345,7 +348,7 @@ const CompaniesPage: React.FC = () => {
                         {comp.opportunities.slice(0, 2).map((opp) => (
                           <div
                             key={opp.id}
-                            className="p-2 bg-[var(--bg-muted)] hover:bg-[var(--bg-card-hover)] rounded-lg border border-[var(--border-subtle)] flex items-center justify-between transition-colors cursor-pointer"
+                            className="p-2 bg-[var(--bg-muted)] hover:bg-(--bg-card-hover) rounded-lg border border-[var(--border-subtle)] flex items-center justify-between transition-colors cursor-pointer"
                             onClick={() => navigate("/opportunities")}
                           >
                             <div className="flex items-center gap-2">
@@ -372,7 +375,7 @@ const CompaniesPage: React.FC = () => {
                 <div className="pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between">
                   <button
                     onClick={() => setSelectedCompanyModal(comp)}
-                    className="flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 text-xs font-medium text-(--text-muted) hover:text-[var(--primary)] transition-colors cursor-pointer"
                   >
                     <Eye size={14} /> Full Company Profile
                   </button>
@@ -433,7 +436,7 @@ const CompaniesPage: React.FC = () => {
 
                 <button
                   onClick={() => setSelectedCompanyModal(null)}
-                  className="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-lg font-bold p-1 cursor-pointer"
+                  className="text-(--text-muted) hover:text-[var(--text-primary)] text-lg font-bold p-1 cursor-pointer"
                 >
                   ✕
                 </button>
@@ -442,7 +445,7 @@ const CompaniesPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 {selectedCompanyModal.location && (
                   <div className="p-3 bg-[var(--bg-muted)] rounded-xl border border-[var(--border-subtle)]">
-                    <span className="text-[var(--text-muted)] block mb-1 font-medium">
+                    <span className="text-(--text-muted) block mb-1 font-medium">
                       Headquarters Location
                     </span>
 
@@ -455,7 +458,7 @@ const CompaniesPage: React.FC = () => {
 
                 {selectedCompanyModal.website && (
                   <div className="p-3 bg-[var(--bg-muted)] rounded-xl border border-[var(--border-subtle)]">
-                    <span className="text-[var(--text-muted)] block mb-1 font-medium">
+                    <span className="text-(--text-muted) block mb-1 font-medium">
                       Official Website
                     </span>
 
@@ -478,7 +481,7 @@ const CompaniesPage: React.FC = () => {
 
                 {selectedCompanyModal.contactEmail && (
                   <div className="p-3 bg-[var(--bg-muted)] rounded-xl border border-[var(--border-subtle)]">
-                    <span className="text-[var(--text-muted)] block mb-1 font-medium">
+                    <span className="text-(--text-muted) block mb-1 font-medium">
                       Contact Email
                     </span>
 
@@ -491,7 +494,7 @@ const CompaniesPage: React.FC = () => {
 
                 {selectedCompanyModal.phone && (
                   <div className="p-3 bg-[var(--bg-muted)] rounded-xl border border-[var(--border-subtle)]">
-                    <span className="text-[var(--text-muted)] block mb-1 font-medium">
+                    <span className="text-(--text-muted) block mb-1 font-medium">
                       Contact Phone
                     </span>
 
@@ -507,7 +510,7 @@ const CompaniesPage: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                <h4 className="text-xs font-bold text-(--text-muted) uppercase tracking-wider">
                   Company Overview
                 </h4>
 
@@ -519,7 +522,7 @@ const CompaniesPage: React.FC = () => {
 
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                  <h4 className="text-xs font-bold text-(--text-muted) uppercase tracking-wider">
                     Published Opportunities (
                     {selectedCompanyModal.opportunities?.length || 0})
                   </h4>
@@ -541,14 +544,14 @@ const CompaniesPage: React.FC = () => {
                     {selectedCompanyModal.opportunities.map((opp) => (
                       <div
                         key={opp.id}
-                        className="p-3 bg-[var(--bg-muted)] hover:bg-[var(--bg-card-hover)] rounded-xl border border-[var(--border-subtle)] flex items-center justify-between transition-all"
+                        className="p-3 bg-[var(--bg-muted)] hover:bg-(--bg-card-hover) rounded-xl border border-[var(--border-subtle)] flex items-center justify-between transition-all"
                       >
                         <div>
                           <h5 className="text-sm font-bold text-[var(--text-primary)]">
                             {opp.title}
                           </h5>
 
-                          <span className="text-xs text-[var(--text-muted)]">
+                          <span className="text-xs text-(--text-muted)">
                             {opp.work_mode}{" "}
                             {opp.location ? `• ${opp.location}` : ""}
                           </span>
@@ -567,7 +570,7 @@ const CompaniesPage: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-[var(--text-muted)] italic">
+                  <p className="text-xs text-(--text-muted) italic">
                     No live active job postings right now.
                   </p>
                 )}

@@ -25,6 +25,23 @@ const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotStage, setForgotStage] = useState<"request" | "reset">(
+    "request",
+  );
+  const [captcha, setCaptcha] = useState<{
+    id: string;
+    question: string;
+    image: string;
+  } | null>(null);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [captchaAnswer, setCaptchaAnswer] = useState("");
+  const [resetToken, setResetToken] = useState("");
+  const [resetPasswordData, setResetPasswordData] = useState({
+    password: "",
+    confirmPassword: "",
+    token: "",
+  });
 
   const { login } = useAuth();
   const { theme } = useTheme();
@@ -33,6 +50,18 @@ const Auth: React.FC = () => {
   const [dbInstitutions, setDbInstitutions] = useState<
     Array<{ id: number; name: string; code: string; location: string }>
   >([]);
+
+  const loadCaptcha = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/captcha`);
+      const data = await response.json();
+      if (response.ok && data.success && data.captcha) {
+        setCaptcha(data.captcha);
+      }
+    } catch (error) {
+      console.error("Failed to load captcha challenge:", error);
+    }
+  };
 
   useEffect(() => {
     const loadPublicInstitutions = async () => {
@@ -51,7 +80,9 @@ const Auth: React.FC = () => {
         console.error("Failed to load institutions:", err);
       }
     };
+
     loadPublicInstitutions();
+    loadCaptcha();
   }, []);
 
   const [signInData, setSignInData] = useState({
@@ -128,11 +159,21 @@ const Auth: React.FC = () => {
     setErrorMsg("");
     setSuccessMsg("");
 
+    if (!captcha?.id || !captchaAnswer.trim()) {
+      setErrorMsg("Please complete the captcha challenge to continue.");
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/auth/signin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(signInData),
+        body: JSON.stringify({
+          ...signInData,
+          captchaId: captcha.id,
+          captchaAnswer,
+        }),
       });
 
       const data = await response.json();
@@ -142,6 +183,8 @@ const Auth: React.FC = () => {
       }
 
       setSuccessMsg("Welcome back! Entering the bridge...");
+      setCaptchaAnswer("");
+      await loadCaptcha();
       login(data.token, data.user);
 
       const targetPath =
@@ -154,6 +197,116 @@ const Auth: React.FC = () => {
       setTimeout(() => navigate(targetPath), 600);
     } catch (err: any) {
       setErrorMsg(err.message || "Invalid credentials. Please try again.");
+      setCaptchaAnswer("");
+      await loadCaptcha();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPasswordRequest = async () => {
+    if (!forgotEmail.trim() || !captcha?.id) {
+      setErrorMsg(
+        "Please enter a valid email and complete the captcha challenge.",
+      );
+      return;
+    }
+
+    setLoading(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: forgotEmail,
+          captchaId: captcha.id,
+          captchaAnswer: captchaAnswer,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message || "Unable to process password reset request",
+        );
+      }
+
+      setSuccessMsg(data.message || "Password reset instructions generated.");
+      const nextResetToken = data.resetToken || "";
+      setResetToken(nextResetToken);
+      setResetPasswordData((prev) => ({
+        ...prev,
+        token: nextResetToken,
+      }));
+      setForgotStage("reset");
+      setCaptchaAnswer("");
+      await loadCaptcha();
+    } catch (err: any) {
+      setErrorMsg(err.message || "Unable to process password reset request");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPasswordSubmit = async () => {
+    const tokenToUse = resetToken || resetPasswordData.token;
+
+    if (!tokenToUse.trim()) {
+      setErrorMsg(
+        "Reset token is missing. Paste it from the request response or reload the form.",
+      );
+      return;
+    }
+
+    if (resetPasswordData.password.length < 6) {
+      setErrorMsg("Password must be at least 6 characters long.");
+      return;
+    }
+
+    if (resetPasswordData.password !== resetPasswordData.confirmPassword) {
+      setErrorMsg("Passwords do not match.");
+      return;
+    }
+
+    setLoading(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: tokenToUse,
+          password: resetPasswordData.password,
+          confirmPassword: resetPasswordData.confirmPassword,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to reset password");
+      }
+
+      setSuccessMsg(data.message || "Password reset successful.");
+      setForgotOpen(false);
+      setForgotStage("request");
+      setForgotEmail("");
+      setCaptchaAnswer("");
+      setResetToken("");
+      setResetPasswordData({
+        password: "",
+        confirmPassword: "",
+        token: "",
+      });
+      setMode("signin");
+      setShowPassword(false);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to reset password.");
     } finally {
       setLoading(false);
     }
@@ -164,6 +317,12 @@ const Auth: React.FC = () => {
     setLoading(true);
     setErrorMsg("");
     setSuccessMsg("");
+
+    if (!captcha?.id || !captchaAnswer.trim()) {
+      setErrorMsg("Please complete the captcha challenge to register.");
+      setLoading(false);
+      return;
+    }
 
     if (["Student", "Faculty", "Institute"].includes(signUpData.role)) {
       if (!signUpData.institution_id) {
@@ -178,6 +337,8 @@ const Auth: React.FC = () => {
     try {
       const payload = {
         ...signUpData,
+        captchaId: captcha.id,
+        captchaAnswer,
         institution_id: signUpData.institution_id
           ? Number(signUpData.institution_id)
           : undefined,
@@ -210,6 +371,8 @@ const Auth: React.FC = () => {
           ? "Industry node established! Redirecting..."
           : "Account synthesized! Redirecting...",
       );
+      setCaptchaAnswer("");
+      await loadCaptcha();
       login(data.token, data.user);
 
       const targetPath =
@@ -220,6 +383,8 @@ const Auth: React.FC = () => {
       setTimeout(() => navigate(targetPath), 600);
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to create account");
+      setCaptchaAnswer("");
+      await loadCaptcha();
     } finally {
       setLoading(false);
     }
@@ -340,7 +505,14 @@ const Auth: React.FC = () => {
                     <label>Password</label>
                     <a
                       href="#forgot"
-                      onClick={(e) => e.preventDefault()}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setForgotOpen(true);
+                        setForgotStage("request");
+                        setErrorMsg("");
+                        setSuccessMsg("");
+                        loadCaptcha();
+                      }}
                       className="forgot-link"
                     >
                       Forgot?
@@ -366,6 +538,190 @@ const Auth: React.FC = () => {
                   </div>
                 </div>
 
+                <div className="captcha-panel">
+                  <div className="captcha-header">
+                    <span>Security check</span>
+                    <button
+                      type="button"
+                      className="link-btn"
+                      onClick={loadCaptcha}
+                    >
+                      Refresh
+                    </button>
+                  </div>
+                  {captcha ? (
+                    <>
+                      <img
+                        src={captcha.image}
+                        alt={captcha.question}
+                        className="captcha-image"
+                      />
+                      <input
+                        type="number"
+                        value={captchaAnswer}
+                        onChange={(e) => setCaptchaAnswer(e.target.value)}
+                        placeholder="Enter the result"
+                        className="captcha-answer-input"
+                      />
+                    </>
+                  ) : (
+                    <div className="captcha-loading">Loading challenge...</div>
+                  )}
+                </div>
+
+                {forgotOpen && (
+                  <div className="forgot-panel">
+                    {forgotStage === "request" ? (
+                      <>
+                        <div className="mini-header">
+                          <h3>Reset your password</h3>
+                          <button
+                            type="button"
+                            className="close-link"
+                            onClick={() => setForgotOpen(false)}
+                          >
+                            Close
+                          </button>
+                        </div>
+
+                        <div className="neo-input-group compact">
+                          <label>Email address</label>
+                          <div className="input-box">
+                            <Mail size={18} className="input-icon" />
+                            <input
+                              type="email"
+                              value={forgotEmail}
+                              onChange={(e) => setForgotEmail(e.target.value)}
+                              placeholder="name@university.edu"
+                              required
+                            />
+                          </div>
+                        </div>
+
+                        {captcha && (
+                          <div className="captcha-box">
+                            <label>Security check</label>
+                            <div className="captcha-inline image-inline">
+                              <img
+                                src={captcha.image}
+                                alt={captcha.question}
+                                className="captcha-image small"
+                              />
+                              <button
+                                type="button"
+                                className="link-btn"
+                                onClick={loadCaptcha}
+                              >
+                                Refresh
+                              </button>
+                            </div>
+                            <input
+                              type="number"
+                              value={captchaAnswer}
+                              onChange={(e) => setCaptchaAnswer(e.target.value)}
+                              placeholder="Enter the answer"
+                            />
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          className="neo-submit-btn secondary-submit"
+                          onClick={handleForgotPasswordRequest}
+                          disabled={loading}
+                        >
+                          {loading ? (
+                            <span className="loader"></span>
+                          ) : (
+                            "Send Reset Token"
+                          )}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="mini-header">
+                          <h3>Set a new password</h3>
+                          <button
+                            type="button"
+                            className="close-link"
+                            onClick={() => setForgotOpen(false)}
+                          >
+                            Close
+                          </button>
+                        </div>
+
+                        <div className="neo-input-group compact">
+                          <label>Reset token</label>
+                          <div className="input-box">
+                            <Lock size={18} className="input-icon" />
+                            <input
+                              type="text"
+                              value={resetToken || resetPasswordData.token}
+                              onChange={(e) => {
+                                setResetToken(e.target.value);
+                                setResetPasswordData((prev) => ({
+                                  ...prev,
+                                  token: e.target.value,
+                                }));
+                              }}
+                              placeholder="Paste reset token"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="neo-input-group compact">
+                          <label>New password</label>
+                          <div className="input-box">
+                            <Lock size={18} className="input-icon" />
+                            <input
+                              type={showPassword ? "text" : "password"}
+                              value={resetPasswordData.password}
+                              onChange={(e) =>
+                                setResetPasswordData((prev) => ({
+                                  ...prev,
+                                  password: e.target.value,
+                                }))
+                              }
+                              placeholder="Minimum 6 characters"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="neo-input-group compact">
+                          <label>Confirm password</label>
+                          <div className="input-box">
+                            <Lock size={18} className="input-icon" />
+                            <input
+                              type={showPassword ? "text" : "password"}
+                              value={resetPasswordData.confirmPassword}
+                              onChange={(e) =>
+                                setResetPasswordData((prev) => ({
+                                  ...prev,
+                                  confirmPassword: e.target.value,
+                                }))
+                              }
+                              placeholder="Repeat your new password"
+                            />
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          className="neo-submit-btn secondary-submit"
+                          onClick={handleResetPasswordSubmit}
+                          disabled={loading}
+                        >
+                          {loading ? (
+                            <span className="loader"></span>
+                          ) : (
+                            "Reset Password"
+                          )}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+
                 <button
                   type="submit"
                   className="neo-submit-btn"
@@ -383,7 +739,7 @@ const Auth: React.FC = () => {
             ) : (
               <form onSubmit={handleSignUpSubmit} className="neo-form slide-in">
                 <div className="form-header">
-                  <h2>Initialize Profile</h2>
+                  <h2>Register Yourself</h2>
                   <p>Select your persona to begin.</p>
                 </div>
 
@@ -530,6 +886,37 @@ const Auth: React.FC = () => {
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
+                </div>
+
+                <div className="captcha-panel">
+                  <div className="captcha-header">
+                    <span>Human verification</span>
+                    <button
+                      type="button"
+                      className="link-btn"
+                      onClick={loadCaptcha}
+                    >
+                      Refresh
+                    </button>
+                  </div>
+                  {captcha ? (
+                    <>
+                      <img
+                        src={captcha.image}
+                        alt={captcha.question}
+                        className="captcha-image"
+                      />
+                      <input
+                        type="number"
+                        value={captchaAnswer}
+                        onChange={(e) => setCaptchaAnswer(e.target.value)}
+                        placeholder="Enter the result"
+                        className="captcha-answer-input"
+                      />
+                    </>
+                  ) : (
+                    <div className="captcha-loading">Loading challenge...</div>
+                  )}
                 </div>
 
                 <button
