@@ -23,11 +23,12 @@ export const initTables = async () => {
     `);
 
     try {
-      await pool.query(`ALTER TABLE institutions ADD COLUMN verification_status VARCHAR(50) DEFAULT 'approved'`);
+      await pool.query(
+        `ALTER TABLE institutions ADD COLUMN verification_status VARCHAR(50) DEFAULT 'approved'`,
+      );
     } catch (_err) {
       // Column already exists
     }
-
 
     // 2. Users Table
     await pool.query(`
@@ -44,6 +45,20 @@ export const initTables = async () => {
       )
     `);
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        token_hash VARCHAR(255) NOT NULL UNIQUE,
+        expires_at DATETIME NOT NULL,
+        used_at DATETIME NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_password_reset_tokens_user_id (user_id),
+        INDEX idx_password_reset_tokens_expires_at (expires_at),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
     // Ensure institution_id column exists if table was created previously without it
     try {
       await pool.query(`ALTER TABLE users ADD COLUMN institution_id INT NULL`);
@@ -52,7 +67,9 @@ export const initTables = async () => {
     }
 
     try {
-      await pool.query(`ALTER TABLE users MODIFY COLUMN role VARCHAR(100) DEFAULT 'Student'`);
+      await pool.query(
+        `ALTER TABLE users MODIFY COLUMN role VARCHAR(100) DEFAULT 'Student'`,
+      );
     } catch (e) {
       // Ignore migration error
     }
@@ -91,16 +108,24 @@ export const initTables = async () => {
     `);
 
     try {
-      await pool.query(`ALTER TABLE student_profiles MODIFY COLUMN cgpa DECIMAL(3, 2) DEFAULT NULL`);
+      await pool.query(
+        `ALTER TABLE student_profiles MODIFY COLUMN cgpa DECIMAL(3, 2) DEFAULT NULL`,
+      );
     } catch (_e) {}
     try {
-      await pool.query(`ALTER TABLE student_profiles ADD COLUMN verification_status VARCHAR(50) DEFAULT 'pending'`);
+      await pool.query(
+        `ALTER TABLE student_profiles ADD COLUMN verification_status VARCHAR(50) DEFAULT 'pending'`,
+      );
     } catch (_e) {}
     try {
-      await pool.query(`ALTER TABLE student_profiles ADD COLUMN career_match_score INT NULL`);
+      await pool.query(
+        `ALTER TABLE student_profiles ADD COLUMN career_match_score INT NULL`,
+      );
     } catch (_e) {}
     try {
-      await pool.query(`ALTER TABLE student_profiles ADD COLUMN student_id VARCHAR(100) NULL`);
+      await pool.query(
+        `ALTER TABLE student_profiles ADD COLUMN student_id VARCHAR(100) NULL`,
+      );
     } catch (_e) {}
 
     // 4. Skills Table (id, name, category)
@@ -142,7 +167,9 @@ export const initTables = async () => {
     `);
 
     try {
-      await pool.query(`ALTER TABLE student_projects ADD COLUMN repo_url VARCHAR(255) NULL`);
+      await pool.query(
+        `ALTER TABLE student_projects ADD COLUMN repo_url VARCHAR(255) NULL`,
+      );
     } catch (_e) {
       // Column already exists
     }
@@ -161,16 +188,56 @@ export const initTables = async () => {
     `);
 
     // Safe non-destructive additive migrations for student_certifications
-    try { await pool.query(`ALTER TABLE student_certifications ADD COLUMN issue_date DATE NULL`); } catch (_e) {}
-    try { await pool.query(`ALTER TABLE student_certifications ADD COLUMN credential_id VARCHAR(255) NULL`); } catch (_e) {}
-    try { await pool.query(`ALTER TABLE student_certifications ADD COLUMN file_name VARCHAR(255) NULL`); } catch (_e) {}
-    try { await pool.query(`ALTER TABLE student_certifications ADD COLUMN file_type VARCHAR(100) NULL`); } catch (_e) {}
-    try { await pool.query(`ALTER TABLE student_certifications ADD COLUMN file_size INT NULL`); } catch (_e) {}
-    try { await pool.query(`ALTER TABLE student_certifications ADD COLUMN verification_status VARCHAR(50) DEFAULT 'pending'`); } catch (_e) {}
-    try { await pool.query(`ALTER TABLE student_certifications ADD COLUMN verified_by INT NULL`); } catch (_e) {}
-    try { await pool.query(`ALTER TABLE student_certifications ADD COLUMN verified_at TIMESTAMP NULL`); } catch (_e) {}
-    try { await pool.query(`ALTER TABLE student_certifications ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`); } catch (_e) {}
-    try { await pool.query(`ALTER TABLE student_certifications ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`); } catch (_e) {}
+    try {
+      await pool.query(
+        `ALTER TABLE student_certifications ADD COLUMN issue_date DATE NULL`,
+      );
+    } catch (_e) {}
+    try {
+      await pool.query(
+        `ALTER TABLE student_certifications ADD COLUMN credential_id VARCHAR(255) NULL`,
+      );
+    } catch (_e) {}
+    try {
+      await pool.query(
+        `ALTER TABLE student_certifications ADD COLUMN file_name VARCHAR(255) NULL`,
+      );
+    } catch (_e) {}
+    try {
+      await pool.query(
+        `ALTER TABLE student_certifications ADD COLUMN file_type VARCHAR(100) NULL`,
+      );
+    } catch (_e) {}
+    try {
+      await pool.query(
+        `ALTER TABLE student_certifications ADD COLUMN file_size INT NULL`,
+      );
+    } catch (_e) {}
+    try {
+      await pool.query(
+        `ALTER TABLE student_certifications ADD COLUMN verification_status VARCHAR(50) DEFAULT 'pending'`,
+      );
+    } catch (_e) {}
+    try {
+      await pool.query(
+        `ALTER TABLE student_certifications ADD COLUMN verified_by INT NULL`,
+      );
+    } catch (_e) {}
+    try {
+      await pool.query(
+        `ALTER TABLE student_certifications ADD COLUMN verified_at TIMESTAMP NULL`,
+      );
+    } catch (_e) {}
+    try {
+      await pool.query(
+        `ALTER TABLE student_certifications ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`,
+      );
+    } catch (_e) {}
+    try {
+      await pool.query(
+        `ALTER TABLE student_certifications ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`,
+      );
+    } catch (_e) {}
 
     // 7b. Student Resumes Table (Only 1 active resume per student)
     await pool.query(`
@@ -235,16 +302,56 @@ export const initTables = async () => {
     `);
 
     // Safe non-destructive additive migrations for assessment_questions
-    try { await pool.query(`ALTER TABLE assessment_questions ADD COLUMN source_type VARCHAR(50) NOT NULL DEFAULT 'system'`); } catch (_e) {}
-    try { await pool.query(`ALTER TABLE assessment_questions ADD COLUMN source_company_id INT NULL`); } catch (_e) {}
-    try { await pool.query(`ALTER TABLE assessment_questions ADD COLUMN created_by_user_id INT NULL`); } catch (_e) {}
-    try { await pool.query(`ALTER TABLE assessment_questions ADD COLUMN status VARCHAR(50) NOT NULL DEFAULT 'approved'`); } catch (_e) {}
-    try { await pool.query(`ALTER TABLE assessment_questions ADD COLUMN rejection_reason TEXT NULL`); } catch (_e) {}
-    try { await pool.query(`ALTER TABLE assessment_questions ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`); } catch (_e) {}
-    try { await pool.query(`ALTER TABLE assessment_questions ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`); } catch (_e) {}
-    try { await pool.query(`ALTER TABLE assessment_questions ADD INDEX idx_assessment_questions_status (status)`); } catch (_e) {}
-    try { await pool.query(`ALTER TABLE assessment_questions ADD INDEX idx_assessment_questions_source (source_type)`); } catch (_e) {}
-    try { await pool.query(`ALTER TABLE assessment_questions ADD INDEX idx_assessment_questions_company (source_company_id)`); } catch (_e) {}
+    try {
+      await pool.query(
+        `ALTER TABLE assessment_questions ADD COLUMN source_type VARCHAR(50) NOT NULL DEFAULT 'system'`,
+      );
+    } catch (_e) {}
+    try {
+      await pool.query(
+        `ALTER TABLE assessment_questions ADD COLUMN source_company_id INT NULL`,
+      );
+    } catch (_e) {}
+    try {
+      await pool.query(
+        `ALTER TABLE assessment_questions ADD COLUMN created_by_user_id INT NULL`,
+      );
+    } catch (_e) {}
+    try {
+      await pool.query(
+        `ALTER TABLE assessment_questions ADD COLUMN status VARCHAR(50) NOT NULL DEFAULT 'approved'`,
+      );
+    } catch (_e) {}
+    try {
+      await pool.query(
+        `ALTER TABLE assessment_questions ADD COLUMN rejection_reason TEXT NULL`,
+      );
+    } catch (_e) {}
+    try {
+      await pool.query(
+        `ALTER TABLE assessment_questions ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`,
+      );
+    } catch (_e) {}
+    try {
+      await pool.query(
+        `ALTER TABLE assessment_questions ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`,
+      );
+    } catch (_e) {}
+    try {
+      await pool.query(
+        `ALTER TABLE assessment_questions ADD INDEX idx_assessment_questions_status (status)`,
+      );
+    } catch (_e) {}
+    try {
+      await pool.query(
+        `ALTER TABLE assessment_questions ADD INDEX idx_assessment_questions_source (source_type)`,
+      );
+    } catch (_e) {}
+    try {
+      await pool.query(
+        `ALTER TABLE assessment_questions ADD INDEX idx_assessment_questions_company (source_company_id)`,
+      );
+    } catch (_e) {}
 
     // 8b. Assessment Attempts Table
     await pool.query(`
@@ -347,8 +454,16 @@ export const initTables = async () => {
     `);
 
     // Safe non-destructive additive migrations for opportunities
-    try { await pool.query(`ALTER TABLE opportunities MODIFY COLUMN type VARCHAR(100) NOT NULL`); } catch (_e) {}
-    try { await pool.query(`ALTER TABLE opportunities ADD COLUMN target_audience VARCHAR(50) NOT NULL DEFAULT 'STUDENT'`); } catch (_e) {}
+    try {
+      await pool.query(
+        `ALTER TABLE opportunities MODIFY COLUMN type VARCHAR(100) NOT NULL`,
+      );
+    } catch (_e) {}
+    try {
+      await pool.query(
+        `ALTER TABLE opportunities ADD COLUMN target_audience VARCHAR(50) NOT NULL DEFAULT 'STUDENT'`,
+      );
+    } catch (_e) {}
 
     // 11. Opportunity Skills Table
     await pool.query(`
@@ -458,7 +573,9 @@ export const initTables = async () => {
 
     // Ensure start_time column exists if table was previously initialized
     try {
-      await pool.query(`ALTER TABLE collaborations ADD COLUMN start_time VARCHAR(100) NULL`);
+      await pool.query(
+        `ALTER TABLE collaborations ADD COLUMN start_time VARCHAR(100) NULL`,
+      );
     } catch (_e) {
       // Column already exists
     }
@@ -1188,16 +1305,21 @@ export const initTables = async () => {
     }
 
     // Seed Sample Academia-Industry Collaborations if empty
-    const [existingCollabs]: any = await pool.query(`SELECT COUNT(*) as count FROM collaborations`);
+    const [existingCollabs]: any = await pool.query(
+      `SELECT COUNT(*) as count FROM collaborations`,
+    );
     if (existingCollabs[0].count === 0) {
-      const [adminUser]: any = await pool.query(`SELECT id FROM users WHERE LOWER(role) = 'admin' LIMIT 1`);
+      const [adminUser]: any = await pool.query(
+        `SELECT id FROM users WHERE LOWER(role) = 'admin' LIMIT 1`,
+      );
       const adminId = adminUser.length > 0 ? adminUser[0].id : 1;
 
       // Seed 4 initial high-quality collaboration initiatives
       const sampleCollabs = [
         {
           title: "Full Stack AI & Web Development Mentorship",
-          description: "A 6-week 1-on-1 industry mentorship program connecting senior engineers from tech partners with promising students to build production-grade web applications using React, Node.js, and TypeScript.",
+          description:
+            "A 6-week 1-on-1 industry mentorship program connecting senior engineers from tech partners with promising students to build production-grade web applications using React, Node.js, and TypeScript.",
           collaboration_type: "Mentorship",
           target_audience: "Student",
           mode: "Online",
@@ -1207,17 +1329,23 @@ export const initTables = async () => {
         },
         {
           title: "Industry-Academia Joint Research in Applied Machine Learning",
-          description: "Collaborative research initiative between university faculty and AI research labs targeting scalable machine learning models for computer vision and analytics.",
+          description:
+            "Collaborative research initiative between university faculty and AI research labs targeting scalable machine learning models for computer vision and analytics.",
           collaboration_type: "Research Collaboration",
           target_audience: "Faculty",
           mode: "Hybrid",
           capacity: 25,
           location: "JIS University Research Hub & Remote",
-          skills: ["Machine Learning", "Python Programming", "Data Visualization"],
+          skills: [
+            "Machine Learning",
+            "Python Programming",
+            "Data Visualization",
+          ],
         },
         {
           title: "Faculty Development Program on Cloud Native Architecture",
-          description: "A 3-day intensive workshop for engineering academicians covering microservices design, containerization, and modern database orchestration.",
+          description:
+            "A 3-day intensive workshop for engineering academicians covering microservices design, containerization, and modern database orchestration.",
           collaboration_type: "Faculty Training",
           target_audience: "Faculty",
           mode: "Online",
@@ -1227,7 +1355,8 @@ export const initTables = async () => {
         },
         {
           title: "Next-Gen Fintech Innovation Challenge 2026",
-          description: "An interactive hackathon and live project challenge hosted by industry leaders for students to solve real-world payment system problems.",
+          description:
+            "An interactive hackathon and live project challenge hosted by industry leaders for students to solve real-world payment system problems.",
           collaboration_type: "Innovation Challenge",
           target_audience: "Both",
           mode: "Hybrid",
@@ -1242,17 +1371,29 @@ export const initTables = async () => {
           `INSERT INTO collaborations 
            (created_by, institution_id, title, description, collaboration_type, target_audience, mode, capacity, location, status)
            VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?, 'published')`,
-          [adminId, col.title, col.description, col.collaboration_type, col.target_audience, col.mode, col.capacity, col.location]
+          [
+            adminId,
+            col.title,
+            col.description,
+            col.collaboration_type,
+            col.target_audience,
+            col.mode,
+            col.capacity,
+            col.location,
+          ],
         );
 
         const newCollabId = cRes.insertId;
 
         for (const sName of col.skills) {
-          const [sRows]: any = await pool.query(`SELECT id FROM skills WHERE name = ? LIMIT 1`, [sName]);
+          const [sRows]: any = await pool.query(
+            `SELECT id FROM skills WHERE name = ? LIMIT 1`,
+            [sName],
+          );
           if (sRows.length > 0) {
             await pool.query(
               `INSERT INTO collaboration_skills (collaboration_id, skill_id) VALUES (?, ?)`,
-              [newCollabId, sRows[0].id]
+              [newCollabId, sRows[0].id],
             );
           }
         }

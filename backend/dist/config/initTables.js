@@ -36,6 +36,19 @@ export const initTables = async () => {
         FOREIGN KEY (institution_id) REFERENCES institutions(id) ON DELETE SET NULL
       )
     `);
+        await pool.query(`
+      CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        token_hash VARCHAR(255) NOT NULL UNIQUE,
+        expires_at DATETIME NOT NULL,
+        used_at DATETIME NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_password_reset_tokens_user_id (user_id),
+        INDEX idx_password_reset_tokens_expires_at (expires_at),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
         // Ensure institution_id column exists if table was created previously without it
         try {
             await pool.query(`ALTER TABLE users ADD COLUMN institution_id INT NULL`);
@@ -1086,7 +1099,11 @@ export const initTables = async () => {
                     mode: "Hybrid",
                     capacity: 25,
                     location: "JIS University Research Hub & Remote",
-                    skills: ["Machine Learning", "Python Programming", "Data Visualization"],
+                    skills: [
+                        "Machine Learning",
+                        "Python Programming",
+                        "Data Visualization",
+                    ],
                 },
                 {
                     title: "Faculty Development Program on Cloud Native Architecture",
@@ -1112,7 +1129,16 @@ export const initTables = async () => {
             for (const col of sampleCollabs) {
                 const [cRes] = await pool.query(`INSERT INTO collaborations 
            (created_by, institution_id, title, description, collaboration_type, target_audience, mode, capacity, location, status)
-           VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?, 'published')`, [adminId, col.title, col.description, col.collaboration_type, col.target_audience, col.mode, col.capacity, col.location]);
+           VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?, 'published')`, [
+                    adminId,
+                    col.title,
+                    col.description,
+                    col.collaboration_type,
+                    col.target_audience,
+                    col.mode,
+                    col.capacity,
+                    col.location,
+                ]);
                 const newCollabId = cRes.insertId;
                 for (const sName of col.skills) {
                     const [sRows] = await pool.query(`SELECT id FROM skills WHERE name = ? LIMIT 1`, [sName]);
