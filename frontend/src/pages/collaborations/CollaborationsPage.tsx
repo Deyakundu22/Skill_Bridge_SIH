@@ -92,11 +92,18 @@ const CollaborationsPage: React.FC = () => {
 
   const role = user?.role ? user.role.toString().toLowerCase() : "student";
   const isIndustry = role === "industry";
-  const canCreate = ["industry", "institution", "academician", "faculty", "institute", "admin"].includes(role);
+  const canCreate = [
+    "industry",
+    "institution",
+    "academician",
+    "faculty",
+    "institute",
+    "admin",
+  ].includes(role);
 
   // State
   const [activeTab, setActiveTab] = useState<"explore" | "my" | "created">(
-    isIndustry ? "created" : "explore"
+    isIndustry ? "created" : "explore",
   );
   const [collaborations, setCollaborations] = useState<Collaboration[]>([]);
   const [myParticipations, setMyParticipations] = useState<any[]>([]);
@@ -120,21 +127,30 @@ const CollaborationsPage: React.FC = () => {
   const [audienceFilter, setAudienceFilter] = useState("");
 
   // Modals
-  const [selectedCollab, setSelectedCollab] = useState<Collaboration | null>(null);
+  const [selectedCollab, setSelectedCollab] = useState<Collaboration | null>(
+    null,
+  );
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [manageModalOpen, setManageModalOpen] = useState(false);
 
   // Apply State
   const [actionLoading, setActionLoading] = useState(false);
-  const [actionMessage, setActionMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [actionMessage, setActionMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   // Create Form State
   const [formTitle, setFormTitle] = useState("");
   const [formDesc, setFormDesc] = useState("");
   const [formType, setFormType] = useState("Mentorship");
-  const [formAudience, setFormAudience] = useState<"Student" | "Faculty" | "Both">("Both");
-  const [formMode, setFormMode] = useState<"Online" | "Offline" | "Hybrid">("Online");
+  const [formAudience, setFormAudience] = useState<
+    "Student" | "Faculty" | "Both"
+  >("Both");
+  const [formMode, setFormMode] = useState<"Online" | "Offline" | "Hybrid">(
+    "Online",
+  );
   const [formLocation, setFormLocation] = useState("");
   const [formCapacity, setFormCapacity] = useState(50);
   const [formStartDate, setFormStartDate] = useState("");
@@ -159,9 +175,12 @@ const CollaborationsPage: React.FC = () => {
       if (modeFilter) queryParams.append("mode", modeFilter);
       if (audienceFilter) queryParams.append("target_audience", audienceFilter);
 
-      const res = await fetch(`${API_BASE_URL}/collaborations?${queryParams.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `${API_BASE_URL}/collaborations?${queryParams.toString()}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       const data = await res.json();
       if (res.ok && data.success) {
         setCollaborations(data.collaborations || []);
@@ -221,26 +240,42 @@ const CollaborationsPage: React.FC = () => {
     setActionLoading(true);
     setActionMessage(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/collaborations/${collabId}/apply`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const res = await fetch(
+        `${API_BASE_URL}/collaborations/${collabId}/apply`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
       const data = await res.json();
       if (res.ok && data.success) {
-        setActionMessage({ type: "success", text: "Successfully joined initiative!" });
+        setActionMessage({
+          type: "success",
+          text: "Successfully joined initiative!",
+        });
         fetchCollaborations();
         fetchMyCollaborations();
         if (selectedCollab && selectedCollab.id === collabId) {
-          setSelectedCollab({ ...selectedCollab, my_status: "Applied", participant_count: selectedCollab.participant_count + 1 });
+          setSelectedCollab({
+            ...selectedCollab,
+            my_status: "Applied",
+            participant_count: selectedCollab.participant_count + 1,
+          });
         }
       } else {
-        setActionMessage({ type: "error", text: data.message || "Failed to apply." });
+        setActionMessage({
+          type: "error",
+          text: data.message || "Failed to apply.",
+        });
       }
     } catch (err) {
-      setActionMessage({ type: "error", text: "Network error during application." });
+      setActionMessage({
+        type: "error",
+        text: "Network error during application.",
+      });
     } finally {
       setActionLoading(false);
     }
@@ -251,23 +286,39 @@ const CollaborationsPage: React.FC = () => {
     setActionLoading(true);
     setActionMessage(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/collaborations/${collabId}/apply`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `${API_BASE_URL}/collaborations/${collabId}/apply`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       const data = await res.json();
       if (res.ok && data.success) {
         setActionMessage({ type: "success", text: "Application cancelled." });
         fetchCollaborations();
         fetchMyCollaborations();
         if (selectedCollab && selectedCollab.id === collabId) {
-          setSelectedCollab({ ...selectedCollab, my_status: null, participant_count: Math.max(0, selectedCollab.participant_count - 1) });
+          setSelectedCollab({
+            ...selectedCollab,
+            my_status: null,
+            participant_count: Math.max(
+              0,
+              selectedCollab.participant_count - 1,
+            ),
+          });
         }
       } else {
-        setActionMessage({ type: "error", text: data.message || "Failed to cancel application." });
+        setActionMessage({
+          type: "error",
+          text: data.message || "Failed to cancel application.",
+        });
       }
     } catch (err) {
-      setActionMessage({ type: "error", text: "Network error during cancellation." });
+      setActionMessage({
+        type: "error",
+        text: "Network error during cancellation.",
+      });
     } finally {
       setActionLoading(false);
     }
@@ -301,7 +352,10 @@ const CollaborationsPage: React.FC = () => {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        setActionMessage({ type: "success", text: "Collaboration initiative published!" });
+        setActionMessage({
+          type: "success",
+          text: "Collaboration initiative published!",
+        });
         setCreateModalOpen(false);
         // Reset form
         setFormTitle("");
@@ -316,10 +370,16 @@ const CollaborationsPage: React.FC = () => {
         fetchCollaborations();
         fetchMyCollaborations();
       } else {
-        setActionMessage({ type: "error", text: data.message || "Failed to create collaboration." });
+        setActionMessage({
+          type: "error",
+          text: data.message || "Failed to create collaboration.",
+        });
       }
     } catch (err) {
-      setActionMessage({ type: "error", text: "Network error creating collaboration." });
+      setActionMessage({
+        type: "error",
+        text: "Network error creating collaboration.",
+      });
     } finally {
       setActionLoading(false);
     }
@@ -331,9 +391,12 @@ const CollaborationsPage: React.FC = () => {
     setManageModalOpen(true);
     setParticipantsLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/collaborations/${collab.id}/participants`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `${API_BASE_URL}/collaborations/${collab.id}/participants`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       const data = await res.json();
       if (res.ok && data.success) {
         setParticipants(data.participants || []);
@@ -346,7 +409,10 @@ const CollaborationsPage: React.FC = () => {
   };
 
   // Handle Participant Status Update
-  const handleUpdateParticipantStatus = async (participantId: number, newStatus: string) => {
+  const handleUpdateParticipantStatus = async (
+    participantId: number,
+    newStatus: string,
+  ) => {
     if (!selectedCollab) return;
     try {
       const res = await fetch(
@@ -358,12 +424,16 @@ const CollaborationsPage: React.FC = () => {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ status: newStatus }),
-        }
+        },
       );
       const data = await res.json();
       if (res.ok && data.success) {
         setParticipants((prev) =>
-          prev.map((p) => (p.participant_id === participantId ? { ...p, status: newStatus as any } : p))
+          prev.map((p) =>
+            p.participant_id === participantId
+              ? { ...p, status: newStatus as any }
+              : p,
+          ),
         );
       }
     } catch (err) {
@@ -373,7 +443,12 @@ const CollaborationsPage: React.FC = () => {
 
   // Delete Collaboration
   const handleDeleteCollaboration = async (collabId: number) => {
-    if (!window.confirm("Are you sure you want to delete this collaboration initiative?")) return;
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this collaboration initiative?",
+      )
+    )
+      return;
     try {
       const res = await fetch(`${API_BASE_URL}/collaborations/${collabId}`, {
         method: "DELETE",
@@ -408,181 +483,205 @@ const CollaborationsPage: React.FC = () => {
   return (
     <MainLayout showRightPanel={false}>
       <div className="collaborations-page-container">
-          {/* Header Banner */}
-          <div className="collab-hero-header">
-            <div className="collab-hero-text">
-              <div className="collab-hero-pill">
-                <Handshake size={16} />
-                <span>ACADEMIA - INDUSTRY ECOSYSTEM</span>
-              </div>
-
-              <h1>
-                Bridge Industry Innovation with <span>Academic Excellence</span>
-              </h1>
-
-              <p>
-                Discover mentorship programs, joint research, guest lectures, innovation challenges, and industrial training initiatives connecting students, faculty, and industry partners.
-              </p>
+        {/* Header Banner */}
+        <div className="collab-hero-header">
+          <div className="collab-hero-text">
+            <div className="collab-hero-pill">
+              <Handshake size={16} />
+              <span>ACADEMIA - INDUSTRY ECOSYSTEM</span>
             </div>
 
-            <div className="collab-hero-actions">
-              <button
-                className={`btn-refresh-header ${isRefreshing ? "refreshing" : ""}`}
-                onClick={handleRefresh}
-                title="Refresh Collaboration Initiatives"
-              >
-                <RotateCw size={17} className={isRefreshing ? "spin-icon" : ""} />
-                <span>Refresh</span>
-              </button>
+            <h1>
+              Bridge Industry Innovation with <span>Academic Excellence</span>
+            </h1>
 
-              {canCreate && (
-                <button
-                  className="btn-create-initiative"
-                  onClick={() => setCreateModalOpen(true)}
-                >
-                  <Plus size={18} />
-                  Publish Initiative
-                </button>
-              )}
-            </div>
+            <p>
+              Discover mentorship programs, joint research, guest lectures,
+              innovation challenges, and industrial training initiatives
+              connecting students, faculty, and industry partners.
+            </p>
           </div>
 
-          {/* Action Message Banner */}
-          {actionMessage && (
-            <div className={`collab-toast ${actionMessage.type}`}>
-              {actionMessage.type === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-              <span>{actionMessage.text}</span>
-              <button onClick={() => setActionMessage(null)}>
-                <X size={16} />
-              </button>
-            </div>
-          )}
-
-          {/* Nav Tabs */}
-          <div className="collab-tabs">
+          <div className="collab-hero-actions">
             <button
-              className={`collab-tab ${activeTab === "explore" ? "active" : ""}`}
-              onClick={() => setActiveTab("explore")}
+              className={`btn-refresh-header ${isRefreshing ? "refreshing" : ""}`}
+              onClick={handleRefresh}
+              title="Refresh Collaboration Initiatives"
             >
-              <Sparkles size={16} />
-              Explore Initiatives ({collaborations.length})
+              <RotateCw size={17} className={isRefreshing ? "spin-icon" : ""} />
+              <span>Refresh</span>
             </button>
-
-            {!isIndustry && (
-              <button
-                className={`collab-tab ${activeTab === "my" ? "active" : ""}`}
-                onClick={() => setActiveTab("my")}
-              >
-                <Award size={16} />
-                My Participations ({myParticipations.length})
-              </button>
-            )}
 
             {canCreate && (
               <button
-                className={`collab-tab ${activeTab === "created" ? "active" : ""}`}
-                onClick={() => setActiveTab("created")}
+                className="btn-create-initiative"
+                onClick={() => setCreateModalOpen(true)}
               >
-                <Building2 size={16} />
-                Managed Initiatives ({myCreated.length})
+                <Plus size={18} />
+                Publish Initiative
               </button>
             )}
           </div>
+        </div>
 
-          {/* TAB 1: EXPLORE */}
-          {activeTab === "explore" && (
-            <>
-              {/* Filter Bar */}
-              <div className="collab-filter-bar">
-                <div className="collab-search-box">
-                  <Search size={18} className="search-icon" />
-                  <input
-                    type="text"
-                    placeholder="Search by title, organization, or keyword..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-                  {search && (
-                    <button className="clear-search" onClick={() => setSearch("")}>
-                      <X size={14} />
-                    </button>
-                  )}
-                </div>
+        {/* Action Message Banner */}
+        {actionMessage && (
+          <div className={`collab-toast ${actionMessage.type}`}>
+            {actionMessage.type === "success" ? (
+              <CheckCircle2 size={18} />
+            ) : (
+              <AlertCircle size={18} />
+            )}
+            <span>{actionMessage.text}</span>
+            <button onClick={() => setActionMessage(null)}>
+              <X size={16} />
+            </button>
+          </div>
+        )}
 
-                <div className="collab-filter-group">
-                  <Filter size={16} className="filter-icon" />
+        {/* Nav Tabs */}
+        <div className="collab-tabs">
+          <button
+            className={`collab-tab ${activeTab === "explore" ? "active" : ""}`}
+            onClick={() => setActiveTab("explore")}
+          >
+            <Sparkles size={16} />
+            Explore Initiatives ({collaborations.length})
+          </button>
 
-                  {/* Type Filter */}
-                  <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
-                    <option value="">All Types</option>
-                    {COLLAB_TYPES.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
+          {!isIndustry && (
+            <button
+              className={`collab-tab ${activeTab === "my" ? "active" : ""}`}
+              onClick={() => setActiveTab("my")}
+            >
+              <Award size={16} />
+              My Participations ({myParticipations.length})
+            </button>
+          )}
 
-                  {/* Mode Filter */}
-                  <select value={modeFilter} onChange={(e) => setModeFilter(e.target.value)}>
-                    <option value="">All Modes</option>
-                    <option value="Online">Online</option>
-                    <option value="Offline">Offline</option>
-                    <option value="Hybrid">Hybrid</option>
-                  </select>
+          {canCreate && (
+            <button
+              className={`collab-tab ${activeTab === "created" ? "active" : ""}`}
+              onClick={() => setActiveTab("created")}
+            >
+              <Building2 size={16} />
+              Managed Initiatives ({myCreated.length})
+            </button>
+          )}
+        </div>
 
-                  {/* Audience Filter */}
-                  <select value={audienceFilter} onChange={(e) => setAudienceFilter(e.target.value)}>
-                    <option value="">All Audiences</option>
-                    <option value="Student">Students</option>
-                    <option value="Faculty">Faculty & Academicians</option>
-                    <option value="Both">Both (Students & Faculty)</option>
-                  </select>
-
-                  {/* Refresh Button */}
+        {/* TAB 1: EXPLORE */}
+        {activeTab === "explore" && (
+          <>
+            {/* Filter Bar */}
+            <div className="collab-filter-bar">
+              <div className="collab-search-box">
+                <Search size={18} className="search-icon" />
+                <input
+                  type="text"
+                  placeholder="Search by title, organization, or keyword..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                {search && (
                   <button
-                    className={`btn-refresh-collab ${isRefreshing ? "refreshing" : ""}`}
-                    onClick={handleRefresh}
-                    title="Refresh Initiatives"
+                    className="clear-search"
+                    onClick={() => setSearch("")}
                   >
-                    <RotateCw size={15} className={isRefreshing ? "spin-icon" : ""} />
-                    <span>Refresh</span>
+                    <X size={14} />
                   </button>
-                </div>
+                )}
               </div>
 
-              {/* Grid */}
-              {loading ? (
-                <div className="collab-loading-state">
-                  <Loader2 size={36} className="spin-icon" />
-                  <p>Loading collaboration initiatives from database...</p>
-                </div>
-              ) : error ? (
-                <div className="collab-error-state">
-                  <AlertCircle size={32} />
-                  <p>{error}</p>
-                  <button onClick={fetchCollaborations}>Retry</button>
-                </div>
-              ) : collaborations.length === 0 ? (
-                <div className="collab-empty-state">
-                  <Handshake size={48} />
-                  <h3>No Collaboration Initiatives Found</h3>
-                  <p>No initiatives matched your current search filters.</p>
-                </div>
-              ) : (
-                <div className="collab-grid">
-                  {collaborations.map((item) => (
-                    <div key={item.id} className="collab-card">
-                      <div className="collab-card-header">
-                        <span className="collab-type-badge">{item.collaboration_type}</span>
+              <div className="collab-filter-group">
+                <Filter size={16} className="filter-icon" />
 
-                        {item.match_score !== null && item.match_score !== undefined && (
+                {/* Type Filter */}
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                >
+                  <option value="">All Types</option>
+                  {COLLAB_TYPES.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Mode Filter */}
+                <select
+                  value={modeFilter}
+                  onChange={(e) => setModeFilter(e.target.value)}
+                >
+                  <option value="">All Modes</option>
+                  <option value="Online">Online</option>
+                  <option value="Offline">Offline</option>
+                  <option value="Hybrid">Hybrid</option>
+                </select>
+
+                {/* Audience Filter */}
+                <select
+                  value={audienceFilter}
+                  onChange={(e) => setAudienceFilter(e.target.value)}
+                >
+                  <option value="">All Audiences</option>
+                  <option value="Student">Students</option>
+                  <option value="Faculty">Faculty & Academicians</option>
+                  <option value="Both">Both (Students & Faculty)</option>
+                </select>
+
+                {/* Refresh Button */}
+                <button
+                  className={`btn-refresh-collab ${isRefreshing ? "refreshing" : ""}`}
+                  onClick={handleRefresh}
+                  title="Refresh Initiatives"
+                >
+                  <RotateCw
+                    size={15}
+                    className={isRefreshing ? "spin-icon" : ""}
+                  />
+                  <span>Refresh</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Grid */}
+            {loading ? (
+              <div className="collab-loading-state">
+                <Loader2 size={36} className="spin-icon" />
+                <p>Loading collaboration initiatives from database...</p>
+              </div>
+            ) : error ? (
+              <div className="collab-error-state">
+                <AlertCircle size={32} />
+                <p>{error}</p>
+                <button onClick={fetchCollaborations}>Retry</button>
+              </div>
+            ) : collaborations.length === 0 ? (
+              <div className="collab-empty-state">
+                <Handshake size={48} />
+                <h3>No Collaboration Initiatives Found</h3>
+                <p>No initiatives matched your current search filters.</p>
+              </div>
+            ) : (
+              <div className="collab-grid">
+                {collaborations.map((item) => (
+                  <div key={item.id} className="collab-card">
+                    <div className="collab-card-header">
+                      <span className="collab-type-badge">
+                        {item.collaboration_type}
+                      </span>
+
+                      {item.match_score !== null &&
+                        item.match_score !== undefined && (
                           <span
                             className={`collab-match-badge ${
                               item.match_score >= 70
                                 ? "high"
                                 : item.match_score >= 40
-                                ? "medium"
-                                : "low"
+                                  ? "medium"
+                                  : "low"
                             }`}
                             title="Skill match compatibility based on your profile skills"
                           >
@@ -591,225 +690,296 @@ const CollaborationsPage: React.FC = () => {
                           </span>
                         )}
 
-                        {item.my_status && (
-                          <span className={`collab-my-status ${getStatusBadgeClass(item.my_status)}`}>
-                            {item.my_status}
+                      {item.my_status && (
+                        <span
+                          className={`collab-my-status ${getStatusBadgeClass(item.my_status)}`}
+                        >
+                          {item.my_status}
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="collab-card-title">{item.title}</h3>
+
+                    <div className="collab-org-row">
+                      {item.company_name ? (
+                        <>
+                          <Building2 size={15} />
+                          <span>{item.company_name}</span>
+                        </>
+                      ) : (
+                        <>
+                          <GraduationCap size={15} />
+                          <span>
+                            {item.institution_name || item.creator_name}
                           </span>
-                        )}
+                        </>
+                      )}
+                    </div>
+
+                    <p className="collab-card-desc">{item.description}</p>
+
+                    {/* Required Skills */}
+                    {item.skills && item.skills.length > 0 && (
+                      <div className="collab-skills-tags">
+                        {item.skills.map((sk) => (
+                          <span key={sk.id} className="skill-tag">
+                            {sk.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="collab-meta-list">
+                      <div className="meta-item">
+                        <MapPin size={14} />
+                        <span>
+                          {item.mode}{" "}
+                          {item.location ? `• ${item.location}` : ""}
+                        </span>
                       </div>
 
-                      <h3 className="collab-card-title">{item.title}</h3>
-
-                      <div className="collab-org-row">
-                        {item.company_name ? (
-                          <>
-                            <Building2 size={15} />
-                            <span>{item.company_name}</span>
-                          </>
-                        ) : (
-                          <>
-                            <GraduationCap size={15} />
-                            <span>{item.institution_name || item.creator_name}</span>
-                          </>
-                        )}
+                      <div className="meta-item">
+                        <Users size={14} />
+                        <span>
+                          {item.participant_count} / {item.capacity} Joined
+                        </span>
                       </div>
 
-                      <p className="collab-card-desc">{item.description}</p>
-
-                      {/* Required Skills */}
-                      {item.skills && item.skills.length > 0 && (
-                        <div className="collab-skills-tags">
-                          {item.skills.map((sk) => (
-                            <span key={sk.id} className="skill-tag">
-                              {sk.name}
-                            </span>
-                          ))}
+                      {item.start_date && (
+                        <div className="meta-item">
+                          <Calendar size={14} />
+                          <span>
+                            {new Date(item.start_date).toLocaleDateString(
+                              "en-US",
+                              {
+                                month: "short",
+                                day: "numeric",
+                              },
+                            )}
+                          </span>
                         </div>
                       )}
 
-                      <div className="collab-meta-list">
+                      {item.start_time && (
                         <div className="meta-item">
-                          <MapPin size={14} />
-                          <span>
-                            {item.mode} {item.location ? `• ${item.location}` : ""}
-                          </span>
+                          <Clock size={14} />
+                          <span>{item.start_time}</span>
                         </div>
-
-                        <div className="meta-item">
-                          <Users size={14} />
-                          <span>
-                            {item.participant_count} / {item.capacity} Joined
-                          </span>
-                        </div>
-
-                        {item.start_date && (
-                          <div className="meta-item">
-                            <Calendar size={14} />
-                            <span>
-                              {new Date(item.start_date).toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                              })}
-                            </span>
-                          </div>
-                        )}
-
-                        {item.start_time && (
-                          <div className="meta-item">
-                            <Clock size={14} />
-                            <span>{item.start_time}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Audience Pill */}
-                      <div className="collab-audience-pill">
-                        Target Audience: <b>{item.target_audience}</b>
-                      </div>
-
-                      <div className="collab-card-actions">
-                        <button
-                          className="btn-view-details"
-                          onClick={() => {
-                            setSelectedCollab(item);
-                            setDetailModalOpen(true);
-                          }}
-                        >
-                          View Details & Apply
-                        </button>
-
-                        {item.created_by === user?.id && (
-                          <button
-                            className="btn-manage-card"
-                            onClick={() => openManageParticipants(item)}
-                          >
-                            Manage ({item.participant_count})
-                          </button>
-                        )}
-                      </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
 
-          {/* TAB 2: MY PARTICIPATIONS */}
-          {activeTab === "my" && !isIndustry && (
-            <div className="my-collaborations-section">
-              {myParticipations.length === 0 ? (
-                <div className="collab-empty-state">
-                  <Award size={48} />
-                  <h3>No Application Records</h3>
-                  <p>You haven't joined or applied to any collaboration initiatives yet.</p>
-                </div>
-              ) : (
-                <div className="participations-table-container">
-                  <table className="collab-table">
-                    <thead>
-                      <tr>
-                        <th>Initiative Title</th>
-                        <th>Type</th>
-                        <th>Organizer</th>
-                        <th>Mode & Location</th>
-                        <th>Applied On</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {myParticipations.map((p) => (
-                        <tr key={p.participant_id}>
-                          <td>
-                            <strong>{p.title}</strong>
-                          </td>
-                          <td>
-                            <span className="table-type-badge">{p.collaboration_type}</span>
-                          </td>
-                          <td>{p.company_name || p.institution_name || p.creator_name}</td>
-                          <td>
-                            {p.mode} {p.location ? `(${p.location})` : ""}
-                          </td>
-                          <td>{new Date(p.applied_at).toLocaleDateString()}</td>
-                          <td>
-                            <span className={`status-pill ${getStatusBadgeClass(p.participation_status)}`}>
-                              {p.participation_status}
-                            </span>
-                          </td>
-                          <td>
-                            {p.participation_status === "Applied" && (
-                              <button
-                                className="btn-cancel-app"
-                                onClick={() => handleCancelApplication(p.collaboration_id)}
-                                disabled={actionLoading}
-                              >
-                                Cancel
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
+                    {/* Audience Pill */}
+                    <div className="collab-audience-pill">
+                      Target Audience: <b>{item.target_audience}</b>
+                    </div>
 
-          {/* TAB 3: MANAGED INITIATIVES */}
-          {activeTab === "created" && canCreate && (
-            <div className="created-collaborations-section">
-              {myCreated.length === 0 ? (
-                <div className="collab-empty-state">
-                  <Building2 size={48} />
-                  <h3>No Initiatives Published Yet</h3>
-                  <p>Publish an initiative to invite students and academicians to participate.</p>
-                  <button
-                    className="btn-create-initiative"
-                    style={{ marginTop: "1rem" }}
-                    onClick={() => setCreateModalOpen(true)}
-                  >
-                    <Plus size={16} /> Publish First Initiative
-                  </button>
-                </div>
-              ) : (
-                <div className="created-grid">
-                  {myCreated.map((item) => (
-                    <div key={item.id} className="created-collab-card">
-                      <div className="created-header">
-                        <span className="collab-type-badge">{item.collaboration_type}</span>
-                        <span className="created-status-published">Published</span>
-                      </div>
+                    <div className="collab-card-actions">
+                      <button
+                        className="btn-view-details"
+                        onClick={() => {
+                          setSelectedCollab(item);
+                          setDetailModalOpen(true);
+                        }}
+                      >
+                        View Details & Apply
+                      </button>
 
-                      <h3>{item.title}</h3>
-                      <p>{item.description}</p>
-
-                      <div className="created-stats">
-                        <div>
-                          <Users size={16} />
-                          <b>{item.participant_count}</b> / {item.capacity} Applicants
-                        </div>
-
-                        <div>
-                          <Calendar size={16} />
-                          <span>
-                            {item.start_date
-                              ? new Date(item.start_date).toLocaleDateString()
-                              : "Flexible Start"}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="created-actions">
+                      {item.created_by === user?.id && (
                         <button
-                          className="btn-manage-participants"
+                          className="btn-manage-card"
                           onClick={() => openManageParticipants(item)}
                         >
-                          <Users size={16} /> Manage Participants ({item.participant_count})
+                          Manage ({item.participant_count})
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* TAB 2: MY PARTICIPATIONS */}
+        {activeTab === "my" && !isIndustry && (
+          <div className="my-collaborations-section">
+            {myParticipations.length === 0 ? (
+              <div className="collab-empty-state">
+                <Award size={48} />
+                <h3>No Application Records</h3>
+                <p>
+                  You haven't joined or applied to any collaboration initiatives
+                  yet.
+                </p>
+              </div>
+            ) : (
+              <div className="participations-table-container">
+                <table className="collab-table">
+                  <thead>
+                    <tr>
+                      <th>Initiative Title</th>
+                      <th>Type</th>
+                      <th>Organizer</th>
+                      <th>Mode & Location</th>
+                      <th>Applied On</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {myParticipations.map((p) => (
+                      <tr key={p.participant_id}>
+                        <td>
+                          <strong>{p.title}</strong>
+                        </td>
+                        <td>
+                          <span className="table-type-badge">
+                            {p.collaboration_type}
+                          </span>
+                        </td>
+                        <td>
+                          {p.company_name ||
+                            p.institution_name ||
+                            p.creator_name}
+                        </td>
+                        <td>
+                          {p.mode} {p.location ? `(${p.location})` : ""}
+                        </td>
+                        <td>{new Date(p.applied_at).toLocaleDateString()}</td>
+                        <td>
+                          <span
+                            className={`status-pill ${getStatusBadgeClass(p.participation_status)}`}
+                          >
+                            {p.participation_status}
+                          </span>
+                        </td>
+                        <td>
+                          {p.participation_status === "Applied" && (
+                            <button
+                              className="btn-cancel-app"
+                              onClick={() =>
+                                handleCancelApplication(p.collaboration_id)
+                              }
+                              disabled={actionLoading}
+                            >
+                              Cancel
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 3: MANAGED INITIATIVES */}
+        {activeTab === "created" && canCreate && (
+          <div className="mt-6">
+            {myCreated.length === 0 ? (
+              <div className="flex flex-col items-center justify-center rounded-2xl border border-[var(--border-color)] bg-[var(--bg-muted)] px-6 py-16 text-center shadow-[var(--shadow-md)]">
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--primary-border)] bg-[var(--primary-subtle)] text-[var(--primary)]">
+                  <Building2 size={28} />
+                </div>
+
+                <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+                  No Initiatives Published Yet
+                </h3>
+
+                <p className="mt-2 max-w-md text-sm text-[var(--text-secondary)]">
+                  Publish an initiative to invite students and academicians to
+                  participate.
+                </p>
+
+                <button
+                  className="mt-5 inline-flex items-center gap-2 rounded-lg border border-[var(--primary)] bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-[var(--text-on-primary)] shadow-[var(--shadow-sm)] transition-all hover:bg-[var(--primary-hover)] hover:shadow-[var(--shadow-md)]"
+                  onClick={() => setCreateModalOpen(true)}
+                >
+                  <Plus size={16} />
+                  Publish First Initiative
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {myCreated.map((item) => (
+                  <div
+                    key={item.id}
+                    className="group flex flex-col overflow-hidden rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] shadow-[var(--shadow-md)] transition-all duration-200 hover:border-[var(--primary-border)] hover:bg-[var(--bg-card-hover)] hover:shadow-[var(--shadow-lg)]"
+                  >
+                    <div className="flex items-center justify-between gap-3 border-b border-[var(--border-subtle)] bg-[var(--bg-muted)] px-5 py-4">
+                      <span className="rounded-md border border-[var(--primary-border)] bg-[var(--primary-subtle)] px-2.5 py-1 text-xs font-semibold text-[var(--primary)]">
+                        {item.collaboration_type}
+                      </span>
+
+                      <span className="inline-flex items-center gap-1.5 rounded-md border border-[var(--accent-emerald)]/25 bg-[var(--accent-emerald-bg)] px-2.5 py-1 text-xs font-semibold text-[var(--accent-emerald)]">
+                        <CheckCircle2 size={13} />
+                        Published
+                      </span>
+                    </div>
+
+                    <div className="flex flex-1 flex-col p-5">
+                      <h3 className="text-lg font-semibold leading-snug text-[var(--text-primary)]">
+                        {item.title}
+                      </h3>
+
+                      <p className="mt-2 line-clamp-3 text-sm leading-6 text-[var(--text-secondary)]">
+                        {item.description}
+                      </p>
+
+                      <div className="mt-5 grid grid-cols-1 gap-2.5">
+                        <div className="flex items-center gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-muted)] px-3.5 py-3">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[var(--primary-border)] bg-[var(--primary-subtle)] text-[var(--primary)]">
+                            <Users size={15} />
+                          </div>
+
+                          <div className="min-w-0">
+                            <p className="text-xs text-[var(--text-muted)]">
+                              Participants
+                            </p>
+                            <p className="text-sm font-semibold text-[var(--text-primary)]">
+                              {item.participant_count}{" "}
+                              <span className="font-normal text-[var(--text-muted)]">
+                                / {item.capacity}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-muted)] px-3.5 py-3">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[var(--accent-cyan)]/25 bg-[var(--accent-cyan-bg)] text-[var(--accent-cyan)]">
+                            <Calendar size={15} />
+                          </div>
+
+                          <div className="min-w-0">
+                            <p className="text-xs text-[var(--text-muted)]">
+                              Start Date
+                            </p>
+                            <p className="text-sm font-medium text-[var(--text-primary)]">
+                              {item.start_date
+                                ? new Date(item.start_date).toLocaleDateString()
+                                : "Flexible Start"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-5 flex items-center gap-2 border-t border-[var(--border-subtle)] pt-4">
+                        <button
+                          className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-[var(--primary-border)] bg-[var(--primary-subtle)] px-3 py-2.5 text-sm font-semibold text-[var(--primary)] transition-all hover:border-[var(--primary)] hover:bg-[var(--primary)] hover:text-[var(--text-on-primary)]"
+                          onClick={() => openManageParticipants(item)}
+                        >
+                          <Users size={16} />
+                          Manage Participants
+                          <span className="rounded-md bg-[var(--primary)]/10 px-1.5 py-0.5 text-xs">
+                            {item.participant_count}
+                          </span>
                         </button>
 
                         <button
-                          className="btn-delete-collab"
+                          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--bg-muted)] text-[var(--text-muted)] transition-all hover:border-[var(--accent-rose)]/40 hover:bg-[var(--accent-rose-bg)] hover:text-[var(--accent-rose)]"
                           onClick={() => handleDeleteCollaboration(item.id)}
                           title="Delete Collaboration"
                         >
@@ -817,28 +987,41 @@ const CollaborationsPage: React.FC = () => {
                         </button>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* DETAIL & APPLY MODAL */}
       {detailModalOpen && selectedCollab && (
-        <div className="collab-modal-overlay" onClick={() => setDetailModalOpen(false)}>
-          <div className="collab-modal-content custom-scrollbar" onClick={(e) => e.stopPropagation()}>
-            <button className="collab-modal-close" onClick={() => setDetailModalOpen(false)}>
+        <div
+          className="collab-modal-overlay"
+          onClick={() => setDetailModalOpen(false)}
+        >
+          <div
+            className="collab-modal-content custom-scrollbar"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="collab-modal-close"
+              onClick={() => setDetailModalOpen(false)}
+            >
               <X size={20} />
             </button>
 
             <div className="collab-detail-header">
-              <span className="collab-type-badge">{selectedCollab.collaboration_type}</span>
-              {selectedCollab.match_score !== null && selectedCollab.match_score !== undefined && (
-                <span className="collab-match-badge high">
-                  <Zap size={14} /> {selectedCollab.match_score}% Skill Match
-                </span>
-              )}
+              <span className="collab-type-badge">
+                {selectedCollab.collaboration_type}
+              </span>
+              {selectedCollab.match_score !== null &&
+                selectedCollab.match_score !== undefined && (
+                  <span className="collab-match-badge high">
+                    <Zap size={14} /> {selectedCollab.match_score}% Skill Match
+                  </span>
+                )}
             </div>
 
             <h2>{selectedCollab.title}</h2>
@@ -847,12 +1030,20 @@ const CollaborationsPage: React.FC = () => {
               {selectedCollab.company_name ? (
                 <>
                   <Building2 size={18} />
-                  <span>Hosted by <strong>{selectedCollab.company_name}</strong></span>
+                  <span>
+                    Hosted by <strong>{selectedCollab.company_name}</strong>
+                  </span>
                 </>
               ) : (
                 <>
                   <GraduationCap size={18} />
-                  <span>Organized by <strong>{selectedCollab.institution_name || selectedCollab.creator_name}</strong></span>
+                  <span>
+                    Organized by{" "}
+                    <strong>
+                      {selectedCollab.institution_name ||
+                        selectedCollab.creator_name}
+                    </strong>
+                  </span>
                 </>
               )}
             </div>
@@ -861,20 +1052,26 @@ const CollaborationsPage: React.FC = () => {
               <div className="detail-box">
                 <span className="box-label">Mode & Location</span>
                 <span className="box-val">
-                  {selectedCollab.mode} {selectedCollab.location ? `(${selectedCollab.location})` : ""}
+                  {selectedCollab.mode}{" "}
+                  {selectedCollab.location
+                    ? `(${selectedCollab.location})`
+                    : ""}
                 </span>
               </div>
 
               <div className="detail-box">
                 <span className="box-label">Capacity & Seats</span>
                 <span className="box-val">
-                  {selectedCollab.participant_count} / {selectedCollab.capacity} Slots Filled
+                  {selectedCollab.participant_count} / {selectedCollab.capacity}{" "}
+                  Slots Filled
                 </span>
               </div>
 
               <div className="detail-box">
                 <span className="box-label">Target Audience</span>
-                <span className="box-val">{selectedCollab.target_audience}</span>
+                <span className="box-val">
+                  {selectedCollab.target_audience}
+                </span>
               </div>
 
               <div className="detail-box">
@@ -882,10 +1079,14 @@ const CollaborationsPage: React.FC = () => {
                 <span className="box-val">
                   {selectedCollab.start_date
                     ? `${new Date(selectedCollab.start_date).toLocaleDateString()} ${
-                        selectedCollab.end_date ? `to ${new Date(selectedCollab.end_date).toLocaleDateString()}` : ""
+                        selectedCollab.end_date
+                          ? `to ${new Date(selectedCollab.end_date).toLocaleDateString()}`
+                          : ""
                       }`
                     : "Flexible / Ongoing"}
-                  {selectedCollab.start_time ? ` (${selectedCollab.start_time})` : ""}
+                  {selectedCollab.start_time
+                    ? ` (${selectedCollab.start_time})`
+                    : ""}
                 </span>
               </div>
             </div>
@@ -912,7 +1113,9 @@ const CollaborationsPage: React.FC = () => {
             <div className="collab-detail-footer">
               {selectedCollab.my_status ? (
                 <div className="my-status-container">
-                  <span className={`status-pill ${getStatusBadgeClass(selectedCollab.my_status)}`}>
+                  <span
+                    className={`status-pill ${getStatusBadgeClass(selectedCollab.my_status)}`}
+                  >
                     Application Status: {selectedCollab.my_status}
                   </span>
                   {selectedCollab.my_status === "Applied" && (
@@ -921,7 +1124,11 @@ const CollaborationsPage: React.FC = () => {
                       onClick={() => handleCancelApplication(selectedCollab.id)}
                       disabled={actionLoading}
                     >
-                      {actionLoading ? <Loader2 size={16} className="spin-icon" /> : "Cancel Application"}
+                      {actionLoading ? (
+                        <Loader2 size={16} className="spin-icon" />
+                      ) : (
+                        "Cancel Application"
+                      )}
                     </button>
                   )}
                 </div>
@@ -956,150 +1163,272 @@ const CollaborationsPage: React.FC = () => {
 
       {/* CREATE INITIATIVE MODAL */}
       {createModalOpen && (
-        <div className="collab-modal-overlay" onClick={() => setCreateModalOpen(false)}>
-          <div className="collab-modal-content custom-scrollbar" onClick={(e) => e.stopPropagation()}>
-            <button className="collab-modal-close" onClick={() => setCreateModalOpen(false)}>
-              <X size={20} />
-            </button>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-app)]/80 p-4 backdrop-blur-sm"
+          onClick={() => setCreateModalOpen(false)}
+        >
+          <div
+            className="custom-scrollbar max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-[var(--border-color)] bg-[var(--bg-elevated)] shadow-[var(--shadow-xl)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 z-10 flex items-start justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-6 py-5">
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--primary-border)] bg-[var(--primary-subtle)] text-[var(--primary)]">
+                    <Handshake size={18} />
+                  </div>
 
-            <h2>Publish Academia–Industry Initiative</h2>
-            <p className="modal-subtitle">
-              Create a mentorship, workshop, or collaborative initiative for students and faculty.
-            </p>
+                  <h2 className="text-xl font-semibold text-[var(--text-primary)]">
+                    Publish Academia–Industry Initiative
+                  </h2>
+                </div>
 
-            <form onSubmit={handleCreateSubmit} className="collab-form">
-              <div className="form-group">
-                <label>Initiative Title *</label>
+                <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                  Create a mentorship, workshop, or collaborative initiative for
+                  students and faculty.
+                </p>
+              </div>
+
+              <button
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--bg-muted)] text-[var(--text-muted)] transition-all hover:border-[var(--border-color-hover)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
+                onClick={() => setCreateModalOpen(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateSubmit} className="space-y-6 p-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-[var(--text-primary)]">
+                  Initiative Title{" "}
+                  <span className="text-[var(--accent-rose)]">*</span>
+                </label>
+
                 <input
                   type="text"
                   required
                   placeholder="e.g. Next-Gen Full Stack Development Mentorship"
                   value={formTitle}
                   onChange={(e) => setFormTitle(e.target.value)}
+                  className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-input)] px-3.5 py-2.5 text-sm text-[var(--text-primary)] outline-none transition-all placeholder:text-[var(--text-muted)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--focus-ring)]"
                 />
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Collaboration Type *</label>
-                  <select value={formType} onChange={(e) => setFormType(e.target.value)}>
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-[var(--text-primary)]">
+                    Collaboration Type{" "}
+                    <span className="text-[var(--accent-rose)]">*</span>
+                  </label>
+
+                  <select
+                    value={formType}
+                    onChange={(e) => setFormType(e.target.value)}
+                    className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-input)] px-3.5 py-2.5 text-sm text-[var(--text-primary)] outline-none transition-all focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--focus-ring)]"
+                  >
                     {COLLAB_TYPES.map((t) => (
-                      <option key={t} value={t}>
+                      <option
+                        key={t}
+                        value={t}
+                        className="bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                      >
                         {t}
                       </option>
                     ))}
                   </select>
                 </div>
 
-                <div className="form-group">
-                  <label>Target Audience *</label>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-[var(--text-primary)]">
+                    Target Audience{" "}
+                    <span className="text-[var(--accent-rose)]">*</span>
+                  </label>
+
                   <select
                     value={formAudience}
                     onChange={(e) => setFormAudience(e.target.value as any)}
+                    className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-input)] px-3.5 py-2.5 text-sm text-[var(--text-primary)] outline-none transition-all focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--focus-ring)]"
                   >
-                    <option value="Both">Both (Students & Faculty)</option>
-                    <option value="Student">Students Only</option>
-                    <option value="Faculty">Faculty / Academicians Only</option>
+                    <option
+                      value="Both"
+                      className="bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                    >
+                      Both (Students & Faculty)
+                    </option>
+                    <option
+                      value="Student"
+                      className="bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                    >
+                      Students Only
+                    </option>
+                    <option
+                      value="Faculty"
+                      className="bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                    >
+                      Faculty / Academicians Only
+                    </option>
                   </select>
                 </div>
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Mode *</label>
-                  <select value={formMode} onChange={(e) => setFormMode(e.target.value as any)}>
-                    <option value="Online">Online</option>
-                    <option value="Offline">Offline</option>
-                    <option value="Hybrid">Hybrid</option>
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-[var(--text-primary)]">
+                    Mode <span className="text-[var(--accent-rose)]">*</span>
+                  </label>
+
+                  <select
+                    value={formMode}
+                    onChange={(e) => setFormMode(e.target.value as any)}
+                    className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-input)] px-3.5 py-2.5 text-sm text-[var(--text-primary)] outline-none transition-all focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--focus-ring)]"
+                  >
+                    <option
+                      value="Online"
+                      className="bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                    >
+                      Online
+                    </option>
+                    <option
+                      value="Offline"
+                      className="bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                    >
+                      Offline
+                    </option>
+                    <option
+                      value="Hybrid"
+                      className="bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                    >
+                      Hybrid
+                    </option>
                   </select>
                 </div>
 
-                <div className="form-group">
-                  <label>Location / Link</label>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-[var(--text-primary)]">
+                    Location / Link
+                  </label>
+
                   <input
                     type="text"
                     placeholder="e.g. Virtual Portal or Kolkata Center"
                     value={formLocation}
                     onChange={(e) => setFormLocation(e.target.value)}
+                    className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-input)] px-3.5 py-2.5 text-sm text-[var(--text-primary)] outline-none transition-all placeholder:text-[var(--text-muted)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--focus-ring)]"
                   />
                 </div>
 
-                <div className="form-group">
-                  <label>Max Capacity *</label>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-[var(--text-primary)]">
+                    Max Capacity{" "}
+                    <span className="text-[var(--accent-rose)]">*</span>
+                  </label>
+
                   <input
                     type="number"
                     min="1"
                     required
                     value={formCapacity}
                     onChange={(e) => setFormCapacity(Number(e.target.value))}
+                    className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-input)] px-3.5 py-2.5 text-sm text-[var(--text-primary)] outline-none transition-all placeholder:text-[var(--text-muted)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--focus-ring)]"
                   />
                 </div>
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Start Date</label>
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-[var(--text-primary)]">
+                    Start Date
+                  </label>
+
                   <input
                     type="date"
                     value={formStartDate}
                     onChange={(e) => setFormStartDate(e.target.value)}
+                    className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-input)] px-3.5 py-2.5 text-sm text-[var(--text-primary)] outline-none transition-all focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--focus-ring)]"
                   />
                 </div>
 
-                <div className="form-group">
-                  <label>End Date</label>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-[var(--text-primary)]">
+                    End Date
+                  </label>
+
                   <input
                     type="date"
                     value={formEndDate}
                     onChange={(e) => setFormEndDate(e.target.value)}
+                    className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-input)] px-3.5 py-2.5 text-sm text-[var(--text-primary)] outline-none transition-all focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--focus-ring)]"
                   />
                 </div>
 
-                <div className="form-group">
-                  <label>Schedule Time / Hours</label>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-[var(--text-primary)]">
+                    Schedule Time / Hours
+                  </label>
+
                   <input
                     type="text"
                     placeholder="e.g. 10:00 AM - 01:00 PM IST"
                     value={formStartTime}
                     onChange={(e) => setFormStartTime(e.target.value)}
+                    className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-input)] px-3.5 py-2.5 text-sm text-[var(--text-primary)] outline-none transition-all placeholder:text-[var(--text-muted)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--focus-ring)]"
                   />
                 </div>
               </div>
 
-              <div className="form-group">
-                <label>Description & Objectives *</label>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-[var(--text-primary)]">
+                  Description & Objectives{" "}
+                  <span className="text-[var(--accent-rose)]">*</span>
+                </label>
+
                 <textarea
-                  rows={4}
+                  rows={5}
                   required
                   placeholder="Describe the initiative's goal, practical exposure, and expected outcomes..."
                   value={formDesc}
                   onChange={(e) => setFormDesc(e.target.value)}
+                  className="w-full resize-y rounded-lg border border-[var(--border-color)] bg-[var(--bg-input)] px-3.5 py-3 text-sm leading-6 text-[var(--text-primary)] outline-none transition-all placeholder:text-[var(--text-muted)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--focus-ring)]"
                 />
               </div>
 
-              {/* Required Competencies / Skills Section */}
-              <div className="form-group collab-competencies-container">
-                <div className="competencies-header">
-                  <label>Required Competencies / Skills</label>
-                  <span className="competencies-count-badge">
+              <div className="space-y-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-muted)] p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <label className="text-sm font-semibold text-[var(--text-primary)]">
+                      Required Competencies / Skills
+                    </label>
+                    <p className="mt-1 text-xs text-[var(--text-muted)]">
+                      Select existing skills or add custom competencies.
+                    </p>
+                  </div>
+
+                  <span className="rounded-md border border-[var(--primary-border)] bg-[var(--primary-subtle)] px-2.5 py-1 text-xs font-semibold text-[var(--primary)]">
                     {selectedSkillIds.length + customSkills.length} Selected
                   </span>
                 </div>
 
-                {/* Selected Skills Badges Tray */}
                 {(selectedSkillIds.length > 0 || customSkills.length > 0) && (
-                  <div className="selected-competencies-tray">
+                  <div className="flex flex-wrap gap-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] p-3">
                     {selectedSkillIds.map((id) => {
                       const skillObj = masterSkills.find((s) => s.id === id);
                       if (!skillObj) return null;
+
                       return (
-                        <span key={id} className="selected-competency-pill">
+                        <span
+                          key={id}
+                          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--primary-border)] bg-[var(--primary-subtle)] px-2.5 py-1.5 text-xs font-medium text-[var(--primary)]"
+                        >
                           {skillObj.name}
+
                           <button
                             type="button"
                             onClick={() =>
-                              setSelectedSkillIds((prev) => prev.filter((sId) => sId !== id))
+                              setSelectedSkillIds((prev) =>
+                                prev.filter((sId) => sId !== id),
+                              )
                             }
+                            className="rounded p-0.5 transition-colors hover:bg-[var(--primary)]/10"
                             title="Remove competency"
                           >
                             <X size={12} />
@@ -1109,13 +1438,19 @@ const CollaborationsPage: React.FC = () => {
                     })}
 
                     {customSkills.map((cName) => (
-                      <span key={cName} className="selected-competency-pill custom">
+                      <span
+                        key={cName}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-[var(--accent-amber)]/25 bg-[var(--accent-amber-bg)] px-2.5 py-1.5 text-xs font-medium text-[var(--accent-amber)]"
+                      >
                         {cName} (Custom)
                         <button
                           type="button"
                           onClick={() =>
-                            setCustomSkills((prev) => prev.filter((name) => name !== cName))
+                            setCustomSkills((prev) =>
+                              prev.filter((name) => name !== cName),
+                            )
                           }
+                          className="rounded p-0.5 transition-colors hover:bg-[var(--accent-amber)]/10"
                           title="Remove custom competency"
                         >
                           <X size={12} />
@@ -1125,9 +1460,12 @@ const CollaborationsPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Filter & Add Custom Skill Input */}
-                <div className="competencies-search-wrapper">
-                  <Search size={14} className="search-icon" />
+                <div className="relative">
+                  <Search
+                    size={15}
+                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+                  />
+
                   <input
                     type="text"
                     placeholder="Search or add custom competency (e.g. React, Docker, AI/ML)..."
@@ -1137,28 +1475,37 @@ const CollaborationsPage: React.FC = () => {
                       if (e.key === "Enter") {
                         e.preventDefault();
                         const trimmed = skillFilterText.trim();
+
                         if (trimmed) {
                           const existingMaster = masterSkills.find(
-                            (s) => s.name.toLowerCase() === trimmed.toLowerCase()
+                            (s) =>
+                              s.name.toLowerCase() === trimmed.toLowerCase(),
                           );
+
                           if (existingMaster) {
                             if (!selectedSkillIds.includes(existingMaster.id)) {
-                              setSelectedSkillIds((prev) => [...prev, existingMaster.id]);
+                              setSelectedSkillIds((prev) => [
+                                ...prev,
+                                existingMaster.id,
+                              ]);
                             }
                           } else if (isIndustry || role === "admin") {
                             if (!customSkills.includes(trimmed)) {
                               setCustomSkills((prev) => [...prev, trimmed]);
                             }
                           }
+
                           setSkillFilterText("");
                         }
                       }
                     }}
+                    className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-input)] py-2.5 pl-9 pr-9 text-sm text-[var(--text-primary)] outline-none transition-all placeholder:text-[var(--text-muted)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--focus-ring)]"
                   />
+
                   {skillFilterText && (
                     <button
                       type="button"
-                      className="clear-skill-search"
+                      className="absolute right-2.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
                       onClick={() => setSkillFilterText("")}
                     >
                       <X size={12} />
@@ -1166,40 +1513,55 @@ const CollaborationsPage: React.FC = () => {
                   )}
                 </div>
 
-                {/* Master Skills Selectable Grid & Custom Addition */}
-                <div className="skill-selector-grid">
+                <div className="grid max-h-52 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3">
                   {masterSkills
                     .filter((sk) =>
-                      sk.name.toLowerCase().includes(skillFilterText.toLowerCase())
+                      sk.name
+                        .toLowerCase()
+                        .includes(skillFilterText.toLowerCase()),
                     )
                     .map((sk) => {
                       const isSelected = selectedSkillIds.includes(sk.id);
+
                       return (
-                        <div
+                        <button
+                          type="button"
                           key={sk.id}
-                          className={`skill-pill-select ${isSelected ? "selected" : ""}`}
+                          className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs font-medium transition-all ${
+                            isSelected
+                              ? "border-[var(--primary-border)] bg-[var(--primary-subtle)] text-[var(--primary)]"
+                              : "border-[var(--border-subtle)] bg-[var(--bg-card)] text-[var(--text-secondary)] hover:border-[var(--border-color-hover)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
+                          }`}
                           onClick={() => {
                             setSelectedSkillIds((prev) =>
                               isSelected
                                 ? prev.filter((id) => id !== sk.id)
-                                : [...prev, sk.id]
+                                : [...prev, sk.id],
                             );
                           }}
                         >
-                          {isSelected ? <Check size={12} /> : <Plus size={12} />}
-                          <span>{sk.name}</span>
-                        </div>
+                          {isSelected ? (
+                            <Check size={12} />
+                          ) : (
+                            <Plus size={12} />
+                          )}
+                          <span className="truncate">{sk.name}</span>
+                        </button>
                       );
                     })}
 
                   {skillFilterText.trim() &&
                     !masterSkills.some(
-                      (s) => s.name.toLowerCase() === skillFilterText.trim().toLowerCase()
+                      (s) =>
+                        s.name.toLowerCase() ===
+                        skillFilterText.trim().toLowerCase(),
                     ) && (
-                      <div
-                        className="skill-pill-select custom-add-pill"
+                      <button
+                        type="button"
+                        className="flex items-center gap-2 rounded-lg border border-dashed border-[var(--accent-amber)]/40 bg-[var(--accent-amber-bg)] px-3 py-2 text-left text-xs font-medium text-[var(--accent-amber)] transition-all hover:border-[var(--accent-amber)] hover:bg-[var(--accent-amber)]/15]"
                         onClick={() => {
                           const trimmed = skillFilterText.trim();
+
                           if (trimmed && !customSkills.includes(trimmed)) {
                             setCustomSkills((prev) => [...prev, trimmed]);
                             setSkillFilterText("");
@@ -1207,23 +1569,33 @@ const CollaborationsPage: React.FC = () => {
                         }}
                       >
                         <Plus size={12} />
-                        <span>Add "{skillFilterText.trim()}" (Custom)</span>
-                      </div>
+                        <span className="truncate">
+                          Add "{skillFilterText.trim()}" (Custom)
+                        </span>
+                      </button>
                     )}
                 </div>
               </div>
 
-              <div className="form-actions">
+              <div className="flex items-center justify-end gap-3 border-t border-[var(--border-subtle)] pt-5">
                 <button
                   type="button"
-                  className="btn-secondary"
+                  className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-muted)] px-4 py-2.5 text-sm font-medium text-[var(--text-secondary)] transition-all hover:border-[var(--border-color-hover)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
                   onClick={() => setCreateModalOpen(false)}
                 >
                   Cancel
                 </button>
 
-                <button type="submit" className="btn-primary-action" disabled={actionLoading}>
-                  {actionLoading ? <Loader2 size={16} className="spin-icon" /> : <Plus size={16} />}
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-2 rounded-lg border border-[var(--primary)] bg-[var(--primary)] px-5 py-2.5 text-sm font-semibold text-[var(--text-on-primary)] shadow-[var(--shadow-sm)] transition-all hover:bg-[var(--primary-hover)] hover:shadow-[var(--shadow-md)] disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={actionLoading}
+                >
+                  {actionLoading ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Plus size={16} />
+                  )}
                   Publish Initiative
                 </button>
               </div>
@@ -1234,15 +1606,25 @@ const CollaborationsPage: React.FC = () => {
 
       {/* MANAGE PARTICIPANTS MODAL */}
       {manageModalOpen && selectedCollab && (
-        <div className="collab-modal-overlay" onClick={() => setManageModalOpen(false)}>
-          <div className="collab-modal-content wide custom-scrollbar" onClick={(e) => e.stopPropagation()}>
-            <button className="collab-modal-close" onClick={() => setManageModalOpen(false)}>
+        <div
+          className="collab-modal-overlay"
+          onClick={() => setManageModalOpen(false)}
+        >
+          <div
+            className="collab-modal-content wide custom-scrollbar"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="collab-modal-close"
+              onClick={() => setManageModalOpen(false)}
+            >
               <X size={20} />
             </button>
 
             <h2>Manage Participants</h2>
             <p className="modal-subtitle">
-              Review and update applicant statuses for <strong>{selectedCollab.title}</strong>
+              Review and update applicant statuses for{" "}
+              <strong>{selectedCollab.title}</strong>
             </p>
 
             {participantsLoading ? (
@@ -1274,7 +1656,11 @@ const CollaborationsPage: React.FC = () => {
                       <tr key={p.participant_id}>
                         <td>
                           <strong>{p.name}</strong>
-                          {p.roll_number && <div className="sub-text">Roll: {p.roll_number}</div>}
+                          {p.roll_number && (
+                            <div className="sub-text">
+                              Roll: {p.roll_number}
+                            </div>
+                          )}
                         </td>
                         <td>
                           <span className="role-tag">{p.role}</span>
@@ -1286,8 +1672,13 @@ const CollaborationsPage: React.FC = () => {
                         <td>
                           {p.department || p.degree ? (
                             <div>
-                              {p.department} {p.current_sem ? `(${p.current_sem})` : ""}
-                              {p.cgpa ? <div className="sub-text">CGPA: {p.cgpa}</div> : ""}
+                              {p.department}{" "}
+                              {p.current_sem ? `(${p.current_sem})` : ""}
+                              {p.cgpa ? (
+                                <div className="sub-text">CGPA: {p.cgpa}</div>
+                              ) : (
+                                ""
+                              )}
                             </div>
                           ) : (
                             <span className="sub-text">N/A</span>
@@ -1295,7 +1686,9 @@ const CollaborationsPage: React.FC = () => {
                         </td>
                         <td>{new Date(p.applied_at).toLocaleDateString()}</td>
                         <td>
-                          <span className={`status-pill ${getStatusBadgeClass(p.status)}`}>
+                          <span
+                            className={`status-pill ${getStatusBadgeClass(p.status)}`}
+                          >
                             {p.status}
                           </span>
                         </td>
@@ -1304,27 +1697,43 @@ const CollaborationsPage: React.FC = () => {
                             {p.status !== "Accepted" && (
                               <button
                                 className="btn-action-accept"
-                                onClick={() => handleUpdateParticipantStatus(p.participant_id, "Accepted")}
+                                onClick={() =>
+                                  handleUpdateParticipantStatus(
+                                    p.participant_id,
+                                    "Accepted",
+                                  )
+                                }
                                 title="Accept Participant"
                               >
                                 Accept
                               </button>
                             )}
 
-                            {p.status !== "Completed" && p.status === "Accepted" && (
-                              <button
-                                className="btn-action-complete"
-                                onClick={() => handleUpdateParticipantStatus(p.participant_id, "Completed")}
-                                title="Mark Completed"
-                              >
-                                Complete
-                              </button>
-                            )}
+                            {p.status !== "Completed" &&
+                              p.status === "Accepted" && (
+                                <button
+                                  className="btn-action-complete"
+                                  onClick={() =>
+                                    handleUpdateParticipantStatus(
+                                      p.participant_id,
+                                      "Completed",
+                                    )
+                                  }
+                                  title="Mark Completed"
+                                >
+                                  Complete
+                                </button>
+                              )}
 
                             {p.status !== "Rejected" && (
                               <button
                                 className="btn-action-reject"
-                                onClick={() => handleUpdateParticipantStatus(p.participant_id, "Rejected")}
+                                onClick={() =>
+                                  handleUpdateParticipantStatus(
+                                    p.participant_id,
+                                    "Rejected",
+                                  )
+                                }
                                 title="Reject Participant"
                               >
                                 Reject

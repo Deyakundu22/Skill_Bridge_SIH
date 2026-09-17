@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
+
 import MainLayout from "../../components/layout/MainLayout";
+
 import {
   Building2,
   Users,
@@ -18,6 +20,7 @@ import {
   ChevronRight,
   Zap,
 } from "lucide-react";
+
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { API_BASE_URL } from "../../config/api";
@@ -148,6 +151,7 @@ interface DashboardData {
 const InstitutionDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { token } = useAuth();
+
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -156,6 +160,7 @@ const InstitutionDashboard: React.FC = () => {
   const fetchDashboardData = useCallback(async () => {
     setLoading(true);
     setError(null);
+
     const authToken = token || localStorage.getItem("skillbridge_token");
 
     try {
@@ -175,6 +180,7 @@ const InstitutionDashboard: React.FC = () => {
       }
 
       setData(result);
+
       setLastRefreshed(
         new Date().toLocaleTimeString([], {
           hour: "2-digit",
@@ -198,11 +204,8 @@ const InstitutionDashboard: React.FC = () => {
     return (
       <MainLayout showRightPanel={false}>
         <div className="w-full max-w-7xl mx-auto px-4 py-20 flex flex-col items-center justify-center space-y-4">
-          <Loader2
-            className="animate-spin text-amber-600 dark:text-indigo-400"
-            size={44}
-          />
-          <p className="text-stone-600 dark:text-slate-400 font-medium text-sm">
+          <Loader2 className="animate-spin text-[var(--primary)]" size={44} />
+          <p className="text-[var(--text-muted)] font-medium text-sm text-center">
             Calculating institutional skill metrics & real-time industry
             analytics...
           </p>
@@ -213,32 +216,35 @@ const InstitutionDashboard: React.FC = () => {
 
   return (
     <MainLayout showRightPanel={false}>
-      <div className="w-full max-w-7xl mx-auto px-4 py-6 space-y-6 text-stone-900 dark:text-slate-100">
-        {/* HEADER HERO CARD */}
-        <div className="bg-stone-200/70 border border-stone-300/80 dark:bg-slate-900/80 dark:border-slate-800/80 backdrop-blur-xl rounded-2xl p-6 shadow-md dark:shadow-xl">
+      <div className="w-full max-w-7xl mx-auto px-4 py-6 space-y-6 text-[var(--text-primary)]">
+        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-[var(--shadow-md)]">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="p-3.5 bg-amber-600/10 border border-amber-600/20 text-amber-700 dark:bg-indigo-500/10 dark:border-indigo-500/20 dark:text-indigo-400 rounded-2xl shrink-0">
+              <div className="p-3.5 bg-[var(--primary-subtle)] border border-[var(--primary-border)] text-[var(--primary)] rounded-2xl shrink-0">
                 <Building2 size={32} />
               </div>
+
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 bg-amber-700/10 border border-amber-700/20 text-amber-800 dark:bg-indigo-500/15 dark:border-indigo-500/30 dark:text-indigo-300 font-bold text-[11px] rounded-full uppercase tracking-wider">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2.5 py-0.5 bg-[var(--primary-subtle)] border border-[var(--primary-border)] text-[var(--primary)] font-bold text-[11px] rounded-full uppercase tracking-wider">
                     {data?.institution.code || "INSTITUTION"}
                   </span>
-                  <span className="text-xs text-stone-600 dark:text-slate-400 font-medium flex items-center gap-1">
+
+                  <span className="text-xs text-[var(--text-muted)] font-medium flex items-center gap-1">
                     <ShieldCheck
                       size={13}
-                      className="text-emerald-600 dark:text-emerald-400"
-                    />{" "}
+                      className="text-[var(--accent-emerald)]"
+                    />
                     Authenticated Institutional Portal
                   </span>
                 </div>
-                <h1 className="text-2xl font-extrabold text-stone-900 dark:text-slate-100 mt-1">
+
+                <h1 className="text-2xl font-extrabold text-[var(--text-primary)] mt-1">
                   {data?.institution.name ||
                     "Institution Smart Analytics Dashboard"}
                 </h1>
-                <p className="text-xs sm:text-sm text-stone-600 dark:text-slate-400 mt-0.5">
+
+                <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-0.5">
                   Automated institutional intelligence connecting student skill
                   development, industry demand, and curriculum alignment.
                 </p>
@@ -247,21 +253,20 @@ const InstitutionDashboard: React.FC = () => {
 
             <div className="flex items-center gap-3 shrink-0">
               {lastRefreshed && (
-                <span className="text-xs text-stone-500 dark:text-slate-400 hidden sm:inline-block font-medium">
+                <span className="text-xs text-[var(--text-muted)] hidden sm:inline-block font-medium">
                   Refreshed: {lastRefreshed}
                 </span>
               )}
+
               <button
                 onClick={fetchDashboardData}
                 disabled={loading}
-                className="flex items-center gap-2 px-4 py-2 bg-stone-300/80 hover:bg-stone-300 text-stone-800 border-stone-400 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold dark:border-slate-700 border transition-all cursor-pointer shadow-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-card-hover)] hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] border border-[var(--border-color)] rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-[var(--shadow-sm)] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <RotateCw
                   size={14}
                   className={
-                    loading
-                      ? "animate-spin text-amber-600 dark:text-indigo-400"
-                      : ""
+                    loading ? "animate-spin text-[var(--primary)]" : ""
                   }
                 />
                 Refresh Telemetry
@@ -270,12 +275,11 @@ const InstitutionDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* ERROR DISPLAY */}
         {error && (
-          <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl flex items-center gap-3 text-rose-700 dark:text-rose-300 text-sm">
+          <div className="p-4 bg-[var(--accent-rose-bg)] border border-[var(--accent-rose)]/30 rounded-xl flex items-center gap-3 text-[var(--accent-rose)] text-sm">
             <AlertCircle
               size={18}
-              className="text-rose-600 dark:text-rose-400 shrink-0"
+              className="text-[var(--accent-rose)] shrink-0"
             />
             <span>{error}</span>
           </div>
@@ -283,54 +287,58 @@ const InstitutionDashboard: React.FC = () => {
 
         {data && (
           <>
-            {/* 1. REQUIRED INSTITUTION KPIs (5 CORE METRICS) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              {/* Metric 1: Total Students */}
-              <div className="bg-stone-200/60 border border-stone-300/80 dark:bg-slate-900/60 dark:border-slate-800/80 rounded-2xl p-5 shadow-sm dark:shadow-lg relative overflow-hidden group hover:border-amber-600/40 dark:hover:border-indigo-500/40 transition-all">
+              <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-[var(--shadow-md)] relative overflow-hidden group hover:border-[var(--primary-border)] transition-all">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-stone-600 dark:text-slate-400 uppercase tracking-wider">
+                  <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
                     Total Students
                   </span>
-                  <div className="p-2 bg-amber-600/10 text-amber-700 dark:bg-indigo-500/10 dark:text-indigo-400 rounded-xl">
+
+                  <div className="p-2 bg-[var(--primary-subtle)] text-[var(--primary)] rounded-xl">
                     <Users size={18} />
                   </div>
                 </div>
+
                 <div className="mt-3">
-                  <span className="text-3xl font-black text-stone-900 dark:text-slate-100">
+                  <span className="text-3xl font-black text-[var(--text-primary)]">
                     {data.overview.totalStudents.toLocaleString()}
                   </span>
-                  <p className="text-[11px] text-stone-500 dark:text-slate-400 mt-1 flex items-center gap-1 font-medium">
+
+                  <p className="text-[11px] text-[var(--text-muted)] mt-1 flex items-center gap-1 font-medium">
                     <GraduationCap
                       size={12}
-                      className="text-amber-600 dark:text-indigo-400"
+                      className="text-[var(--primary)]"
                     />
                     Enrolled Students
                   </p>
                 </div>
               </div>
 
-              {/* Metric 2: Assessed Students */}
-              <div className="bg-stone-200/60 border border-stone-300/80 dark:bg-slate-900/60 dark:border-slate-800/80 rounded-2xl p-5 shadow-sm dark:shadow-lg relative overflow-hidden group hover:border-cyan-600/40 dark:hover:border-cyan-500/40 transition-all">
+              <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-[var(--shadow-md)] relative overflow-hidden group hover:border-[var(--accent-cyan)]/30 transition-all">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-stone-600 dark:text-slate-400 uppercase tracking-wider">
+                  <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
                     Assessed
                   </span>
-                  <div className="p-2 bg-cyan-600/10 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-400 rounded-xl">
+
+                  <div className="p-2 bg-[var(--accent-cyan-bg)] text-[var(--accent-cyan)] rounded-xl">
                     <Brain size={18} />
                   </div>
                 </div>
+
                 <div className="mt-3">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-black text-stone-900 dark:text-slate-100">
+                    <span className="text-3xl font-black text-[var(--text-primary)]">
                       {data.overview.assessedStudents}
                     </span>
-                    <span className="text-xs font-extrabold text-cyan-700 dark:text-cyan-400">
+
+                    <span className="text-xs font-extrabold text-[var(--accent-cyan)]">
                       ({data.overview.assessedStudentsPercentage}%)
                     </span>
                   </div>
-                  <div className="w-full bg-stone-300 dark:bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+
+                  <div className="w-full bg-[var(--bg-muted)] h-1.5 rounded-full mt-2 overflow-hidden">
                     <div
-                      className="bg-cyan-600 dark:bg-cyan-500 h-full rounded-full transition-all duration-500"
+                      className="bg-[var(--accent-cyan)] h-full rounded-full transition-all duration-500"
                       style={{
                         width: `${data.overview.assessedStudentsPercentage}%`,
                       }}
@@ -339,111 +347,119 @@ const InstitutionDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Metric 3: Industry Ready Students */}
-              <div className="bg-stone-200/60 border border-stone-300/80 dark:bg-slate-900/60 dark:border-slate-800/80 rounded-2xl p-5 shadow-sm dark:shadow-lg relative overflow-hidden group hover:border-emerald-600/40 dark:hover:border-emerald-500/40 transition-all">
+              <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-[var(--shadow-md)] relative overflow-hidden group hover:border-[var(--accent-emerald)]/30 transition-all">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-stone-600 dark:text-slate-400 uppercase tracking-wider">
+                  <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
                     Industry Ready
                   </span>
-                  <div className="p-2 bg-emerald-600/10 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 rounded-xl">
+
+                  <div className="p-2 bg-[var(--accent-emerald-bg)] text-[var(--accent-emerald)] rounded-xl">
                     <Award size={18} />
                   </div>
                 </div>
+
                 <div className="mt-3">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-black text-stone-900 dark:text-slate-100">
+                    <span className="text-3xl font-black text-[var(--text-primary)]">
                       {data.overview.industryReadyStudents}
                     </span>
-                    <span className="text-xs font-extrabold text-emerald-700 dark:text-emerald-400">
+
+                    <span className="text-xs font-extrabold text-[var(--accent-emerald)]">
                       ({data.overview.industryReadyPercentage}%)
                     </span>
                   </div>
-                  <p className="text-[11px] text-stone-500 dark:text-slate-400 mt-1 flex items-center gap-1 font-medium">
+
+                  <p className="text-[11px] text-[var(--text-muted)] mt-1 flex items-center gap-1 font-medium">
                     <TrendingUp
                       size={12}
-                      className="text-emerald-600 dark:text-emerald-400"
+                      className="text-[var(--accent-emerald)]"
                     />
                     ≥75% Proficiency Score
                   </p>
                 </div>
               </div>
 
-              {/* Metric 4: Internship Participation */}
-              <div className="bg-stone-200/60 border border-stone-300/80 dark:bg-slate-900/60 dark:border-slate-800/80 rounded-2xl p-5 shadow-sm dark:shadow-lg relative overflow-hidden group hover:border-indigo-600/40 dark:hover:border-indigo-500/40 transition-all">
+              <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-[var(--shadow-md)] relative overflow-hidden group hover:border-[var(--accent-purple)]/30 transition-all">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-stone-600 dark:text-slate-400 uppercase tracking-wider">
+                  <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
                     Internships
                   </span>
-                  <div className="p-2 bg-indigo-600/10 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400 rounded-xl">
+
+                  <div className="p-2 bg-[var(--accent-purple-bg)] text-[var(--accent-purple)] rounded-xl">
                     <GraduationCap size={18} />
                   </div>
                 </div>
+
                 <div className="mt-3">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-black text-stone-900 dark:text-slate-100">
+                    <span className="text-3xl font-black text-[var(--text-primary)]">
                       {data.overview.internshipStudents}
                     </span>
-                    <span className="text-xs font-extrabold text-indigo-700 dark:text-indigo-400">
+
+                    <span className="text-xs font-extrabold text-[var(--accent-purple)]">
                       ({data.overview.internshipPercentage}%)
                     </span>
                   </div>
-                  <p className="text-[11px] text-stone-500 dark:text-slate-400 mt-1 flex items-center gap-1 font-medium">
+
+                  <p className="text-[11px] text-[var(--text-muted)] mt-1 flex items-center gap-1 font-medium">
                     <Briefcase
                       size={12}
-                      className="text-indigo-600 dark:text-indigo-400"
+                      className="text-[var(--accent-purple)]"
                     />
                     Participating Students
                   </p>
                 </div>
               </div>
 
-              {/* Metric 5: Placement Progress */}
-              <div className="bg-stone-200/60 border border-stone-300/80 dark:bg-slate-900/60 dark:border-slate-800/80 rounded-2xl p-5 shadow-sm dark:shadow-lg relative overflow-hidden group hover:border-purple-600/40 dark:hover:border-purple-500/40 transition-all">
+              <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-[var(--shadow-md)] relative overflow-hidden group hover:border-[var(--accent-pink)]/30 transition-all">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-stone-600 dark:text-slate-400 uppercase tracking-wider">
+                  <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
                     Placed
                   </span>
-                  <div className="p-2 bg-purple-600/10 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400 rounded-xl">
+
+                  <div className="p-2 bg-[var(--accent-pink-bg)] text-[var(--accent-pink)] rounded-xl">
                     <CheckCircle2 size={18} />
                   </div>
                 </div>
+
                 <div className="mt-3">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-black text-stone-900 dark:text-slate-100">
+                    <span className="text-3xl font-black text-[var(--text-primary)]">
                       {data.overview.placedStudents}
                     </span>
-                    <span className="text-xs font-extrabold text-purple-700 dark:text-purple-400">
+
+                    <span className="text-xs font-extrabold text-[var(--accent-pink)]">
                       ({data.overview.placedPercentage}%)
                     </span>
                   </div>
-                  <p className="text-[11px] text-stone-500 dark:text-slate-400 mt-1 flex items-center gap-1 font-medium">
-                    <Award
-                      size={12}
-                      className="text-purple-600 dark:text-purple-400"
-                    />
+
+                  <p className="text-[11px] text-[var(--text-muted)] mt-1 flex items-center gap-1 font-medium">
+                    <Award size={12} className="text-[var(--accent-pink)]" />
                     Full-Time Corporate Offers
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* 2. SMART AUTOMATION: "WHAT SHOULD WE TEACH?" & PRIORITIZED SKILLS */}
-            <div className="bg-stone-200/70 border border-stone-300/80 dark:bg-slate-900/70 dark:border-slate-800/80 rounded-2xl p-6 shadow-sm dark:shadow-xl space-y-5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-300 dark:border-slate-800 pb-4">
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-[var(--shadow-md)] space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--border-subtle)] pb-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-amber-600/10 text-amber-700 dark:bg-indigo-500/10 dark:text-indigo-400 rounded-xl shrink-0">
+                  <div className="p-2.5 bg-[var(--primary-subtle)] text-[var(--primary)] rounded-xl shrink-0">
                     <Zap size={22} />
                   </div>
+
                   <div>
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-lg font-bold text-stone-900 dark:text-slate-100">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="text-lg font-bold text-[var(--text-primary)]">
                         Smart Automation: What Should We Teach?
                       </h2>
-                      <span className="px-2 py-0.5 bg-amber-600/10 text-amber-800 border border-amber-600/30 dark:bg-indigo-500/15 dark:text-indigo-300 dark:border-indigo-500/30 text-[10px] font-extrabold rounded-md uppercase tracking-wider">
+
+                      <span className="px-2 py-0.5 bg-[var(--accent-amber-bg)] text-[var(--accent-amber)] border border-[var(--accent-amber)]/30 text-[10px] font-extrabold rounded-md uppercase tracking-wider">
                         Institutional Priority Engine
                       </span>
                     </div>
-                    <p className="text-xs text-stone-600 dark:text-slate-400 mt-0.5">
+
+                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">
                       Automated algorithm calculating institutional priority
                       scores based on Industry Demand + Student Coverage Gaps.
                     </p>
@@ -451,77 +467,81 @@ const InstitutionDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Priority Skills Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {data.skillsToPrioritize.map((item, idx) => (
                   <div
                     key={item.skillId}
-                    className="p-4 bg-stone-100/90 border border-stone-300/90 dark:bg-slate-950/60 dark:border-slate-800/80 rounded-xl space-y-3 shadow-xs hover:border-amber-600/40 dark:hover:border-indigo-500/40 transition-all"
+                    className="p-4 bg-[var(--bg-muted)] border border-[var(--border-color)] rounded-xl space-y-3 shadow-[var(--shadow-sm)] hover:border-[var(--border-color-hover)] transition-all"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="w-5 h-5 flex items-center justify-center bg-stone-300 dark:bg-slate-800 text-stone-700 dark:text-slate-300 rounded-full font-bold text-xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-5 h-5 flex items-center justify-center bg-[var(--bg-card-hover)] text-[var(--text-secondary)] rounded-full font-bold text-xs shrink-0">
                           {idx + 1}
                         </span>
-                        <h3 className="font-extrabold text-sm text-stone-900 dark:text-slate-100">
+
+                        <h3 className="font-extrabold text-sm text-[var(--text-primary)] truncate">
                           {item.skillName}
                         </h3>
                       </div>
+
                       <span
-                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider whitespace-nowrap ${
                           item.priority === "High"
-                            ? "bg-rose-500/15 text-rose-700 border border-rose-500/30 dark:text-rose-400"
+                            ? "bg-[var(--accent-rose-bg)] text-[var(--accent-rose)] border border-[var(--accent-rose)]/30"
                             : item.priority === "Medium"
-                              ? "bg-amber-500/15 text-amber-700 border border-amber-500/30 dark:text-amber-400"
-                              : "bg-stone-300 text-stone-700 dark:bg-slate-800 dark:text-slate-300"
+                              ? "bg-[var(--accent-amber-bg)] text-[var(--accent-amber)] border border-[var(--accent-amber)]/30"
+                              : "bg-[var(--bg-card-hover)] text-[var(--text-secondary)] border border-[var(--border-color)]"
                         }`}
                       >
                         {item.priority} Priority ({item.priorityScore}/100)
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 py-1 bg-stone-200/50 dark:bg-slate-900/50 p-2.5 rounded-lg text-xs">
+                    <div className="grid grid-cols-2 gap-2 py-1 bg-[var(--bg-input)] p-2.5 rounded-lg text-xs border border-[var(--border-subtle)]">
                       <div>
-                        <span className="text-[10px] text-stone-500 dark:text-slate-400 block font-semibold">
+                        <span className="text-[10px] text-[var(--text-muted)] block font-semibold">
                           Industry Demand
                         </span>
-                        <strong className="text-amber-700 dark:text-indigo-400 font-extrabold">
+
+                        <strong className="text-[var(--accent-amber)] font-extrabold">
                           {item.industryDemandPercentage}%
                         </strong>
                       </div>
+
                       <div>
-                        <span className="text-[10px] text-stone-500 dark:text-slate-400 block font-semibold">
+                        <span className="text-[10px] text-[var(--text-muted)] block font-semibold">
                           Student Coverage
                         </span>
-                        <strong className="text-cyan-700 dark:text-cyan-400 font-extrabold">
+
+                        <strong className="text-[var(--accent-cyan)] font-extrabold">
                           {item.studentCoveragePercentage}% ({item.studentCount}{" "}
                           students)
                         </strong>
                       </div>
                     </div>
 
-                    <p className="text-[11px] text-stone-600 dark:text-slate-400 leading-relaxed font-medium bg-stone-200/30 dark:bg-slate-900/30 p-2 rounded-md">
+                    <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed font-medium bg-[var(--bg-input)] p-2 rounded-md border border-[var(--border-subtle)]">
                       💡 {item.reason}
                     </p>
                   </div>
                 ))}
               </div>
 
-              {/* ACTIONABLE RECOMMENDATIONS BOX */}
-              <div className="p-4 bg-amber-600/5 border border-amber-600/20 dark:bg-indigo-500/10 dark:border-indigo-500/20 rounded-xl space-y-2">
-                <div className="flex items-center gap-2 text-xs font-bold text-amber-800 dark:text-indigo-300 uppercase tracking-wider">
-                  <Sparkles size={15} /> Recommended Institutional Curriculum
-                  Actions
+              <div className="p-4 bg-[var(--accent-amber-bg)] border border-[var(--accent-amber)]/25 rounded-xl space-y-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-[var(--accent-amber)] uppercase tracking-wider">
+                  <Sparkles size={15} />
+                  Recommended Institutional Curriculum Actions
                 </div>
+
                 <ul className="space-y-1.5 pt-1">
                   {data.institutionalActions.map((action, idx) => (
                     <li
                       key={idx}
-                      className="text-xs text-stone-700 dark:text-slate-300 flex items-start gap-2"
+                      className="text-xs text-[var(--text-secondary)] flex items-start gap-2"
                     >
                       <ChevronRight
                         size={14}
-                        className="text-amber-600 dark:text-indigo-400 shrink-0 mt-0.5"
+                        className="text-[var(--accent-amber)] shrink-0 mt-0.5"
                       />
                       <span>{action}</span>
                     </li>
@@ -530,18 +550,19 @@ const InstitutionDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* 3. SKILL DEMAND VS STUDENT SUPPLY COMPARISON */}
-            <div className="bg-stone-200/70 border border-stone-300/80 dark:bg-slate-900/70 dark:border-slate-800/80 rounded-2xl p-6 shadow-sm dark:shadow-xl space-y-4">
-              <div className="flex items-center justify-between border-b border-stone-300 dark:border-slate-800 pb-3">
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-[var(--shadow-md)] space-y-4">
+              <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 bg-cyan-600/10 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-400 rounded-xl">
+                  <div className="p-2 bg-[var(--accent-cyan-bg)] text-[var(--accent-cyan)] rounded-xl">
                     <BarChart3 size={20} />
                   </div>
+
                   <div>
-                    <h2 className="text-lg font-bold text-stone-900 dark:text-slate-100">
+                    <h2 className="text-lg font-bold text-[var(--text-primary)]">
                       Skill Demand vs Student Supply Analysis
                     </h2>
-                    <p className="text-xs text-stone-600 dark:text-slate-400">
+
+                    <p className="text-xs text-[var(--text-secondary)]">
                       Direct comparison of industry hiring demand percentage
                       against student coverage & proficiency.
                     </p>
@@ -550,7 +571,7 @@ const InstitutionDashboard: React.FC = () => {
               </div>
 
               {data.skillDemandVsSupply.length === 0 ? (
-                <div className="py-8 text-center text-stone-500 dark:text-slate-400 text-sm bg-stone-100 dark:bg-slate-950/40 rounded-xl border border-stone-300 dark:border-slate-800">
+                <div className="py-8 text-center text-[var(--text-muted)] text-sm bg-[var(--bg-muted)] rounded-xl border border-[var(--border-subtle)]">
                   No active skill telemetry recorded yet.
                 </div>
               ) : (
@@ -558,74 +579,78 @@ const InstitutionDashboard: React.FC = () => {
                   {data.skillDemandVsSupply.map((skill) => (
                     <div
                       key={skill.skillId}
-                      className="p-4 bg-stone-100/90 border border-stone-300/90 dark:bg-slate-950/50 dark:border-slate-800/80 rounded-xl space-y-2 hover:border-stone-400 dark:hover:border-slate-700 transition-all"
+                      className="p-4 bg-[var(--bg-muted)] border border-[var(--border-color)] rounded-xl space-y-2 hover:border-[var(--border-color-hover)] transition-all"
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
-                        <div className="flex items-center gap-2">
-                          <span className="font-extrabold text-sm text-stone-900 dark:text-slate-100">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-extrabold text-sm text-[var(--text-primary)]">
                             {skill.skillName}
                           </span>
-                          <span className="px-2 py-0.5 bg-stone-200 dark:bg-slate-800 text-stone-600 dark:text-slate-400 text-[10px] rounded-md font-semibold">
+
+                          <span className="px-2 py-0.5 bg-[var(--bg-card-hover)] text-[var(--text-muted)] text-[10px] rounded-md font-semibold">
                             {skill.category}
                           </span>
+
                           {skill.isCriticalGap && (
-                            <span className="px-2 py-0.5 bg-rose-500/15 text-rose-700 border border-rose-500/30 dark:text-rose-400 text-[10px] font-bold rounded-md uppercase">
+                            <span className="px-2 py-0.5 bg-[var(--accent-rose-bg)] text-[var(--accent-rose)] border border-[var(--accent-rose)]/30 text-[10px] font-bold rounded-md uppercase">
                               ⚠ Critical Gap
                             </span>
                           )}
                         </div>
 
-                        <div className="flex items-center gap-4 text-stone-600 dark:text-slate-400 text-xs">
+                        <div className="flex items-center gap-4 text-[var(--text-muted)] text-xs">
                           <span>
                             Students Assessed:{" "}
-                            <strong className="text-stone-900 dark:text-slate-200">
+                            <strong className="text-[var(--text-primary)]">
                               {skill.studentCount} (
                               {skill.studentCoveragePercentage}%)
                             </strong>
                           </span>
+
                           <span>
                             Avg Student Prof:{" "}
-                            <strong className="text-cyan-700 dark:text-cyan-400">
+                            <strong className="text-[var(--accent-cyan)]">
                               {skill.avgStudentProficiency}%
                             </strong>
                           </span>
                         </div>
                       </div>
 
-                      {/* Demand vs Supply Visual Bars */}
                       <div className="space-y-1.5 pt-1">
-                        {/* Industry Demand Bar */}
                         <div className="flex items-center gap-3 text-[11px]">
-                          <span className="w-28 font-bold text-amber-800 dark:text-indigo-400 shrink-0">
+                          <span className="w-28 font-bold text-[var(--accent-amber)] shrink-0">
                             Industry Demand
                           </span>
-                          <div className="w-full bg-stone-200 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+
+                          <div className="w-full bg-[var(--bg-card-hover)] h-2.5 rounded-full overflow-hidden">
                             <div
-                              className="bg-amber-600 dark:bg-indigo-500 h-full rounded-full transition-all duration-500"
+                              className="bg-[var(--accent-amber)] h-full rounded-full transition-all duration-500"
                               style={{
                                 width: `${skill.industryDemandPercentage}%`,
                               }}
                             />
                           </div>
-                          <span className="w-12 text-right font-extrabold text-amber-800 dark:text-indigo-400">
+
+                          <span className="w-12 text-right font-extrabold text-[var(--accent-amber)]">
                             {skill.industryDemandPercentage}%
                           </span>
                         </div>
 
-                        {/* Student Supply Bar */}
                         <div className="flex items-center gap-3 text-[11px]">
-                          <span className="w-28 font-bold text-cyan-700 dark:text-cyan-400 shrink-0">
+                          <span className="w-28 font-bold text-[var(--accent-cyan)] shrink-0">
                             Student Supply
                           </span>
-                          <div className="w-full bg-stone-200 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+
+                          <div className="w-full bg-[var(--bg-card-hover)] h-2.5 rounded-full overflow-hidden">
                             <div
-                              className="bg-cyan-600 dark:bg-cyan-500 h-full rounded-full transition-all duration-500"
+                              className="bg-[var(--accent-cyan)] h-full rounded-full transition-all duration-500"
                               style={{
                                 width: `${skill.studentCoveragePercentage}%`,
                               }}
                             />
                           </div>
-                          <span className="w-12 text-right font-extrabold text-cyan-700 dark:text-cyan-400">
+
+                          <span className="w-12 text-right font-extrabold text-[var(--accent-cyan)]">
                             {skill.studentCoveragePercentage}%
                           </span>
                         </div>
@@ -636,16 +661,15 @@ const InstitutionDashboard: React.FC = () => {
               )}
             </div>
 
-            {/* 4. TOP INDUSTRY SKILLS VS TOP STUDENT SKILLS */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Top Industry Skills */}
-              <div className="bg-stone-200/70 border border-stone-300/80 dark:bg-slate-900/70 dark:border-slate-800/80 rounded-2xl p-6 shadow-sm dark:shadow-xl space-y-4">
-                <div className="flex items-center justify-between border-b border-stone-300 dark:border-slate-800 pb-3">
+              <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-[var(--shadow-md)] space-y-4">
+                <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
                   <div className="flex items-center gap-2">
-                    <div className="p-2 bg-amber-600/10 text-amber-700 dark:bg-indigo-500/10 dark:text-indigo-400 rounded-xl">
+                    <div className="p-2 bg-[var(--accent-amber-bg)] text-[var(--accent-amber)] rounded-xl">
                       <Briefcase size={18} />
                     </div>
-                    <h2 className="text-base font-bold text-stone-900 dark:text-slate-100">
+
+                    <h2 className="text-base font-bold text-[var(--text-primary)]">
                       Top Industry Demanded Skills
                     </h2>
                   </div>
@@ -655,18 +679,20 @@ const InstitutionDashboard: React.FC = () => {
                   {data.topIndustrySkills.map((sk) => (
                     <div
                       key={sk.skillId}
-                      className="p-3 bg-stone-100 dark:bg-slate-950/40 border border-stone-300 dark:border-slate-800 rounded-xl flex items-center justify-between text-xs"
+                      className="p-3 bg-[var(--bg-muted)] border border-[var(--border-color)] rounded-xl flex items-center justify-between text-xs"
                     >
                       <div>
-                        <span className="font-extrabold text-stone-900 dark:text-slate-100 block">
+                        <span className="font-extrabold text-[var(--text-primary)] block">
                           {sk.skillName}
                         </span>
-                        <span className="text-[10px] text-stone-500 dark:text-slate-400">
+
+                        <span className="text-[10px] text-[var(--text-muted)]">
                           {sk.category} • Target Required:{" "}
                           {sk.avgRequiredProficiency}%
                         </span>
                       </div>
-                      <span className="px-2.5 py-1 bg-amber-600/10 text-amber-800 border border-amber-600/20 dark:bg-indigo-500/15 dark:text-indigo-300 dark:border-indigo-500/30 font-extrabold rounded-lg">
+
+                      <span className="px-2.5 py-1 bg-[var(--accent-amber-bg)] text-[var(--accent-amber)] border border-[var(--accent-amber)]/25 font-extrabold rounded-lg">
                         {sk.demandCount} Opportunities
                       </span>
                     </div>
@@ -674,14 +700,14 @@ const InstitutionDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Top Student Skills */}
-              <div className="bg-stone-200/70 border border-stone-300/80 dark:bg-slate-900/70 dark:border-slate-800/80 rounded-2xl p-6 shadow-sm dark:shadow-xl space-y-4">
-                <div className="flex items-center justify-between border-b border-stone-300 dark:border-slate-800 pb-3">
+              <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-[var(--shadow-md)] space-y-4">
+                <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
                   <div className="flex items-center gap-2">
-                    <div className="p-2 bg-cyan-600/10 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-400 rounded-xl">
+                    <div className="p-2 bg-[var(--accent-cyan-bg)] text-[var(--accent-cyan)] rounded-xl">
                       <GraduationCap size={18} />
                     </div>
-                    <h2 className="text-base font-bold text-stone-900 dark:text-slate-100">
+
+                    <h2 className="text-base font-bold text-[var(--text-primary)]">
                       Top Student Possessed Skills
                     </h2>
                   </div>
@@ -691,18 +717,20 @@ const InstitutionDashboard: React.FC = () => {
                   {data.topStudentSkills.map((sk) => (
                     <div
                       key={sk.skillId}
-                      className="p-3 bg-stone-100 dark:bg-slate-950/40 border border-stone-300 dark:border-slate-800 rounded-xl flex items-center justify-between text-xs"
+                      className="p-3 bg-[var(--bg-muted)] border border-[var(--border-color)] rounded-xl flex items-center justify-between text-xs"
                     >
                       <div>
-                        <span className="font-extrabold text-stone-900 dark:text-slate-100 block">
+                        <span className="font-extrabold text-[var(--text-primary)] block">
                           {sk.skillName}
                         </span>
-                        <span className="text-[10px] text-stone-500 dark:text-slate-400">
+
+                        <span className="text-[10px] text-[var(--text-muted)]">
                           {sk.category} • Avg Student Score: {sk.avgProficiency}
                           %
                         </span>
                       </div>
-                      <span className="px-2.5 py-1 bg-cyan-600/10 text-cyan-800 border border-cyan-600/20 dark:bg-cyan-500/15 dark:text-cyan-300 dark:border-cyan-500/30 font-extrabold rounded-lg">
+
+                      <span className="px-2.5 py-1 bg-[var(--accent-cyan-bg)] text-[var(--accent-cyan)] border border-[var(--accent-cyan)]/25 font-extrabold rounded-lg">
                         {sk.studentCount} Students
                       </span>
                     </div>
@@ -711,130 +739,141 @@ const InstitutionDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* 5. INTERNSHIP & PLACEMENT FUNNEL PIPELINES */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Internship Pipeline */}
-              <div className="bg-stone-200/70 border border-stone-300/80 dark:bg-slate-900/70 dark:border-slate-800/80 rounded-2xl p-6 shadow-sm dark:shadow-xl space-y-4">
-                <div className="flex items-center justify-between border-b border-stone-300 dark:border-slate-800 pb-3">
+              <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-[var(--shadow-md)] space-y-4">
+                <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
                   <div className="flex items-center gap-2">
-                    <div className="p-2 bg-indigo-600/10 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400 rounded-xl">
+                    <div className="p-2 bg-[var(--accent-purple-bg)] text-[var(--accent-purple)] rounded-xl">
                       <GraduationCap size={20} />
                     </div>
+
                     <div>
-                      <h2 className="text-base font-bold text-stone-900 dark:text-slate-100">
+                      <h2 className="text-base font-bold text-[var(--text-primary)]">
                         Internship Participation
                       </h2>
-                      <p className="text-xs text-stone-600 dark:text-slate-400">
+
+                      <p className="text-xs text-[var(--text-secondary)]">
                         Real-time student internship application metrics.
                       </p>
                     </div>
                   </div>
-                  <span className="text-xs font-extrabold text-stone-800 bg-stone-300 dark:text-slate-200 dark:bg-slate-800 px-3 py-1 rounded-lg">
+
+                  <span className="text-xs font-extrabold text-[var(--text-secondary)] bg-[var(--bg-card-hover)] border border-[var(--border-color)] px-3 py-1 rounded-lg">
                     {data.internships.totalApplications} Applications
                   </span>
                 </div>
 
                 <div className="space-y-2.5">
-                  <div className="flex items-center justify-between p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
-                    <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                  <div className="flex items-center justify-between p-3 bg-[var(--accent-emerald-bg)] border border-[var(--accent-emerald)]/25 rounded-xl">
+                    <div className="flex items-center gap-2 text-xs font-bold text-[var(--accent-emerald)]">
                       <CheckCircle2 size={16} /> Selected / Hired Interns
                     </div>
-                    <span className="text-sm font-black text-emerald-700 dark:text-emerald-400">
+
+                    <span className="text-sm font-black text-[var(--accent-emerald)]">
                       {data.internships.selected}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-xl">
-                    <div className="flex items-center gap-2 text-xs font-bold text-cyan-800 dark:text-cyan-300">
+                  <div className="flex items-center justify-between p-3 bg-[var(--accent-cyan-bg)] border border-[var(--accent-cyan)]/25 rounded-xl">
+                    <div className="flex items-center gap-2 text-xs font-bold text-[var(--accent-cyan)]">
                       <Award size={16} /> Shortlisted
                     </div>
-                    <span className="text-sm font-black text-cyan-700 dark:text-cyan-400">
+
+                    <span className="text-sm font-black text-[var(--accent-cyan)]">
                       {data.internships.shortlisted}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between p-3 bg-stone-100 dark:bg-slate-800/50 border border-stone-300 dark:border-slate-700/60 rounded-xl">
-                    <div className="flex items-center gap-2 text-xs font-bold text-stone-700 dark:text-slate-300">
+                  <div className="flex items-center justify-between p-3 bg-[var(--bg-muted)] border border-[var(--border-color)] rounded-xl">
+                    <div className="flex items-center gap-2 text-xs font-bold text-[var(--text-secondary)]">
                       <Briefcase
                         size={16}
-                        className="text-amber-600 dark:text-indigo-400"
-                      />{" "}
+                        className="text-[var(--accent-amber)]"
+                      />
                       Pending Review
                     </div>
-                    <span className="text-sm font-black text-stone-900 dark:text-slate-200">
+
+                    <span className="text-sm font-black text-[var(--text-primary)]">
                       {data.internships.applied}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between p-3 bg-rose-500/5 border border-rose-500/20 rounded-xl">
-                    <div className="flex items-center gap-2 text-xs font-bold text-rose-800 dark:text-rose-300">
+                  <div className="flex items-center justify-between p-3 bg-[var(--accent-rose-bg)] border border-[var(--accent-rose)]/25 rounded-xl">
+                    <div className="flex items-center gap-2 text-xs font-bold text-[var(--accent-rose)]">
                       <AlertCircle size={16} /> Not Selected
                     </div>
-                    <span className="text-sm font-black text-rose-700 dark:text-rose-400">
+
+                    <span className="text-sm font-black text-[var(--accent-rose)]">
                       {data.internships.rejected}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Placement Pipeline */}
-              <div className="bg-stone-200/70 border border-stone-300/80 dark:bg-slate-900/70 dark:border-slate-800/80 rounded-2xl p-6 shadow-sm dark:shadow-xl space-y-4">
-                <div className="flex items-center justify-between border-b border-stone-300 dark:border-slate-800 pb-3">
+              <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-[var(--shadow-md)] space-y-4">
+                <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
                   <div className="flex items-center gap-2">
-                    <div className="p-2 bg-purple-600/10 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400 rounded-xl">
+                    <div className="p-2 bg-[var(--accent-purple-bg)] text-[var(--accent-purple)] rounded-xl">
                       <Briefcase size={20} />
                     </div>
+
                     <div>
-                      <h2 className="text-base font-bold text-stone-900 dark:text-slate-100">
+                      <h2 className="text-base font-bold text-[var(--text-primary)]">
                         Placement Progress
                       </h2>
-                      <p className="text-xs text-stone-600 dark:text-slate-400">
+
+                      <p className="text-xs text-[var(--text-secondary)]">
                         Corporate recruitment telemetry & offer acceptances.
                       </p>
                     </div>
                   </div>
-                  <span className="text-xs font-extrabold text-stone-800 bg-stone-300 dark:text-slate-200 dark:bg-slate-800 px-3 py-1 rounded-lg">
+
+                  <span className="text-xs font-extrabold text-[var(--text-secondary)] bg-[var(--bg-card-hover)] border border-[var(--border-color)] px-3 py-1 rounded-lg">
                     {data.placements.totalApplications} Applications
                   </span>
                 </div>
 
                 <div className="space-y-2.5">
-                  <div className="flex items-center justify-between p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
-                    <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                  <div className="flex items-center justify-between p-3 bg-[var(--accent-emerald-bg)] border border-[var(--accent-emerald)]/25 rounded-xl">
+                    <div className="flex items-center gap-2 text-xs font-bold text-[var(--accent-emerald)]">
                       <CheckCircle2 size={16} /> Offers Extended / Placed
                     </div>
-                    <span className="text-sm font-black text-emerald-700 dark:text-emerald-400">
+
+                    <span className="text-sm font-black text-[var(--accent-emerald)]">
                       {data.placements.selected}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl">
-                    <div className="flex items-center gap-2 text-xs font-bold text-purple-800 dark:text-purple-300">
+                  <div className="flex items-center justify-between p-3 bg-[var(--accent-purple-bg)] border border-[var(--accent-purple)]/25 rounded-xl">
+                    <div className="flex items-center gap-2 text-xs font-bold text-[var(--accent-purple)]">
                       <Award size={16} /> Shortlisted / Interviewing
                     </div>
-                    <span className="text-sm font-black text-purple-700 dark:text-purple-400">
+
+                    <span className="text-sm font-black text-[var(--accent-purple)]">
                       {data.placements.shortlisted}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between p-3 bg-stone-100 dark:bg-slate-800/50 border border-stone-300 dark:border-slate-700/60 rounded-xl">
-                    <div className="flex items-center gap-2 text-xs font-bold text-stone-700 dark:text-slate-300">
+                  <div className="flex items-center justify-between p-3 bg-[var(--bg-muted)] border border-[var(--border-color)] rounded-xl">
+                    <div className="flex items-center gap-2 text-xs font-bold text-[var(--text-secondary)]">
                       <Briefcase
                         size={16}
-                        className="text-amber-600 dark:text-indigo-400"
-                      />{" "}
+                        className="text-[var(--accent-amber)]"
+                      />
                       Under Evaluation
                     </div>
-                    <span className="text-sm font-black text-stone-900 dark:text-slate-200">
+
+                    <span className="text-sm font-black text-[var(--text-primary)]">
                       {data.placements.applied}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between p-3 bg-rose-500/5 border border-rose-500/20 rounded-xl">
-                    <div className="flex items-center gap-2 text-xs font-bold text-rose-800 dark:text-rose-300">
+                  <div className="flex items-center justify-between p-3 bg-[var(--accent-rose-bg)] border border-[var(--accent-rose)]/25 rounded-xl">
+                    <div className="flex items-center gap-2 text-xs font-bold text-[var(--accent-rose)]">
                       <AlertCircle size={16} /> Not Selected
                     </div>
-                    <span className="text-sm font-black text-rose-700 dark:text-rose-400">
+
+                    <span className="text-sm font-black text-[var(--accent-rose)]">
                       {data.placements.rejected}
                     </span>
                   </div>
@@ -842,30 +881,33 @@ const InstitutionDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* 6. STUDENT COHORT ROSTER */}
-            <div className="bg-stone-200/70 border border-stone-300/80 dark:bg-slate-900/70 dark:border-slate-800/80 rounded-2xl p-6 shadow-sm dark:shadow-xl space-y-4">
-              <div className="flex items-center justify-between border-b border-stone-300 dark:border-slate-800 pb-3">
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-[var(--shadow-md)] space-y-4">
+              <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 bg-amber-600/10 text-amber-700 dark:bg-indigo-500/10 dark:text-indigo-400 rounded-xl">
+                  <div className="p-2 bg-[var(--primary-subtle)] text-[var(--primary)] rounded-xl">
                     <Users size={20} />
                   </div>
+
                   <div>
-                    <h2 className="text-lg font-bold text-stone-900 dark:text-slate-100">
+                    <h2 className="text-lg font-bold text-[var(--text-primary)]">
                       Enrolled Student Cohort Roster
                     </h2>
-                    <p className="text-xs text-stone-600 dark:text-slate-400">
+
+                    <p className="text-xs text-[var(--text-secondary)]">
                       Verified student profiles enrolled under{" "}
                       {data.institution.name}.
                     </p>
                   </div>
                 </div>
+
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-stone-700 bg-stone-300 dark:text-slate-300 dark:bg-slate-800 px-3 py-1 rounded-lg">
+                  <span className="text-xs font-bold text-[var(--text-secondary)] bg-[var(--bg-card-hover)] border border-[var(--border-color)] px-3 py-1 rounded-lg">
                     {data.students.length} Enrolled
                   </span>
+
                   <button
                     onClick={() => navigate("/institution/students")}
-                    className="flex items-center gap-1 px-3 py-1 bg-amber-700 dark:bg-indigo-600 hover:bg-amber-800 dark:hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition-all cursor-pointer shadow-md"
+                    className="flex items-center gap-1 px-3 py-1 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--text-on-primary)] rounded-lg text-xs font-semibold transition-all cursor-pointer shadow-[var(--shadow-sm)]"
                   >
                     View All Directory <ChevronRight size={14} />
                   </button>
@@ -873,61 +915,75 @@ const InstitutionDashboard: React.FC = () => {
               </div>
 
               {data.students.length === 0 ? (
-                <div className="py-8 text-center text-stone-500 dark:text-slate-400 text-sm bg-stone-100 dark:bg-slate-950/40 rounded-xl border border-stone-300 dark:border-slate-800">
+                <div className="py-8 text-center text-[var(--text-muted)] text-sm bg-[var(--bg-muted)] rounded-xl border border-[var(--border-subtle)]">
                   No students currently enrolled under this institution.
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
-                      <tr className="border-b border-stone-300 dark:border-slate-800 text-stone-600 dark:text-slate-400 uppercase tracking-wider font-bold">
+                      <tr className="border-b border-[var(--border-color)] text-[var(--text-muted)] uppercase tracking-wider font-bold">
                         <th className="py-3 px-3">Student Name</th>
                         <th className="py-3 px-3">Degree & Dept</th>
                         <th className="py-3 px-3">CGPA</th>
                         <th className="py-3 px-3">Assessed Skills</th>
                         <th className="py-3 px-3">Avg Proficiency</th>
                         <th className="py-3 px-3 text-center">Readiness</th>
-                        <th className="py-3 px-3 text-right">Student Details</th>
+                        <th className="py-3 px-3 text-right">
+                          Student Details
+                        </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-stone-300/60 dark:divide-slate-800/60 text-stone-800 dark:text-slate-300">
+
+                    <tbody className="divide-y divide-[var(--border-subtle)] text-[var(--text-secondary)]">
                       {data.students.map((st) => (
                         <tr
                           key={st.studentProfileId}
-                          onClick={() => navigate(`/institution/students?studentId=${st.studentProfileId}`)}
-                          className="hover:bg-stone-300/40 dark:hover:bg-slate-800/40 transition-colors cursor-pointer group"
+                          onClick={() =>
+                            navigate(
+                              `/institution/students?studentId=${st.studentProfileId}`,
+                            )
+                          }
+                          className="hover:bg-[var(--bg-card-hover)] transition-colors cursor-pointer group"
                         >
-                          <td className="py-3.5 px-3 font-bold text-stone-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                          <td className="py-3.5 px-3 font-bold text-[var(--text-primary)] group-hover:text-[var(--primary)] transition-colors">
                             {st.name}
-                            <span className="block text-[10px] text-stone-500 dark:text-slate-400 font-normal">
+
+                            <span className="block text-[10px] text-[var(--text-muted)] font-normal">
                               {st.email}
                             </span>
                           </td>
+
                           <td className="py-3.5 px-3">
-                            <span className="font-semibold text-stone-900 dark:text-slate-200">
+                            <span className="font-semibold text-[var(--text-primary)]">
                               {st.degree}
                             </span>
-                            <span className="block text-[10px] text-stone-500 dark:text-slate-400">
+
+                            <span className="block text-[10px] text-[var(--text-muted)]">
                               {st.department} • Sem {st.currentSem}
                             </span>
                           </td>
-                          <td className="py-3.5 px-3 font-extrabold text-stone-900 dark:text-slate-100">
+
+                          <td className="py-3.5 px-3 font-extrabold text-[var(--text-primary)]">
                             {st.cgpa !== null ? st.cgpa.toFixed(2) : "N/A"}
                           </td>
-                          <td className="py-3.5 px-3 font-semibold text-stone-800 dark:text-slate-300">
+
+                          <td className="py-3.5 px-3 font-semibold text-[var(--text-secondary)]">
                             {st.assessedSkillsCount} Skills
                           </td>
-                          <td className="py-3.5 px-3 font-bold text-cyan-700 dark:text-cyan-400">
+
+                          <td className="py-3.5 px-3 font-bold text-[var(--accent-cyan)]">
                             {st.avgProficiency}%
                           </td>
+
                           <td className="py-3.5 px-3 text-center">
                             <span
                               className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
                                 st.avgProficiency >= 75
-                                  ? "bg-emerald-500/15 text-emerald-700 border border-emerald-500/30 dark:text-emerald-400"
+                                  ? "bg-[var(--accent-emerald-bg)] text-[var(--accent-emerald)] border border-[var(--accent-emerald)]/30"
                                   : st.avgProficiency >= 50
-                                    ? "bg-cyan-500/15 text-cyan-700 border border-cyan-500/30 dark:text-cyan-400"
-                                    : "bg-amber-500/15 text-amber-700 border border-amber-500/30 dark:text-amber-400"
+                                    ? "bg-[var(--accent-cyan-bg)] text-[var(--accent-cyan)] border border-[var(--accent-cyan)]/30"
+                                    : "bg-[var(--accent-amber-bg)] text-[var(--accent-amber)] border border-[var(--accent-amber)]/30"
                               }`}
                             >
                               {st.avgProficiency >= 75
@@ -937,13 +993,16 @@ const InstitutionDashboard: React.FC = () => {
                                   : "Needs Review"}
                             </span>
                           </td>
+
                           <td className="py-3.5 px-3 text-right">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                navigate(`/institution/students?studentId=${st.studentProfileId}`);
+                                navigate(
+                                  `/institution/students?studentId=${st.studentProfileId}`,
+                                );
                               }}
-                              className="px-2.5 py-1 bg-amber-600/10 dark:bg-indigo-500/10 text-amber-800 dark:text-indigo-300 border border-amber-600/20 dark:border-indigo-500/30 hover:bg-amber-600 hover:text-white dark:hover:bg-indigo-600 dark:hover:text-white rounded-lg text-xs font-bold transition-all cursor-pointer"
+                              className="px-2.5 py-1 bg-[var(--primary-subtle)] text-[var(--primary)] border border-[var(--primary-border)] hover:bg-[var(--primary)] hover:text-[var(--text-on-primary)] rounded-lg text-xs font-bold transition-all cursor-pointer"
                             >
                               View Details
                             </button>

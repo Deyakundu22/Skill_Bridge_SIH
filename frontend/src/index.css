@@ -2,47 +2,40 @@
 
 :root,
 :root[data-theme="dark"] {
-  /* =========================================================
-     SKILLBRIDGE — EXECUTIVE OBSIDIAN & ELECTRIC TEAL/CYAN
-     High-contrast Dark Slate + Sky Cyan Primary + Emerald/Amber/Rose Accents
-     (Strictly Non-Purplish, Modern Tech & Academia Visual Palette)
-     ========================================================= */
-
   /* ── Page & Surface Hierarchy ── */
-  --bg-app: #0b0f19;
-  --bg-sidebar: #111827;
+  --bg-app: #0b1120;
+  --bg-sidebar: #0f172a;
   --bg-topbar: #111827;
-
-  --bg-card: #172033;
-  --bg-card-hover: #1e293b;
+  --bg-card: #151f32;
+  --bg-card-hover: #1b2940;
   --bg-elevated: #1e293b;
 
   /* ── Borders ── */
-  --border-color: #26354f;
-  --border-color-hover: #3b5075;
-  --border-subtle: #1c283f;
+  --border-color: #26344d;
+  --border-color-hover: #3a4b68;
+  --border-subtle: #1c273a;
 
   /* ── Typography ── */
-  --text-primary: #f8fafc;
+  --text-primary: #f1f5f9;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
 
-  /* ── Primary Accent: Electric Sky Cyan ── */
-  --primary: #1168b9f3;
-  --primary-light: #1088cc;
-  --primary-dark: #0c618b;
-
-  --primary-subtle: rgba(14, 165, 233, 0.12);
-  --primary-border: rgba(56, 189, 248, 0.3);
-  --primary-glow: rgba(14, 165, 233, 0.18);
+  /* ── Primary Accent: Academic Blue ── */
+  --primary: #3b82f6;
+  --primary-light: #60a5fa;
+  --primary-lighter: #63a5f7;
+  --primary-dark: #2563eb;
+  --primary-subtle: rgba(59, 130, 246, 0.12);
+  --primary-border: rgba(96, 165, 250, 0.28);
+  --primary-glow: rgba(59, 130, 246, 0.16);
 
   /* ── Semantic Accents ── */
   --accent-emerald: #10b981; /* Success / Verified */
   --accent-amber: #f59e0b; /* Warning / Pending */
   --accent-rose: #f43f5e; /* Danger / Rejected */
-  --accent-cyan: #06b6d4; /* Metrics / Analytics */
-  --accent-purple: #0284c7; /* Ocean Blue (No purple) */
-  --accent-pink: #f43f5e;
+  --accent-cyan: #22d3ee; /* Metrics / Analytics */
+  --accent-purple: #8b5cf6; /* Learning / Knowledge */
+  --accent-pink: #ec4899; /* Highlights */
 
   /* ── Radii ── */
   --radius-sm: 6px;
@@ -51,25 +44,20 @@
   --radius-xl: 16px;
 
   /* ── Shadows ── */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.55);
-  --shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.65);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.6);
 }
 
 :root[data-theme="light"] {
-  /* =========================================================
-     SKILLBRIDGE — CLEAN LIGHT THEME DESIGN SYSTEM
-     ========================================================= */
-
   /* ── Page & Surface Hierarchy ── */
   --bg-app: #f8fafc;
   --bg-sidebar: #ffffff;
   --bg-topbar: #ffffff;
-
   --bg-card: #ffffff;
   --bg-card-hover: #f1f5f9;
-  --bg-elevated: #f8fafc;
+  --bg-elevated: #ffffff;
 
   /* ── Borders ── */
   --border-color: #e2e8f0;
@@ -81,22 +69,21 @@
   --text-secondary: #475569;
   --text-muted: #64748b;
 
-  /* ── Primary Accent: Electric Sky Blue ── */
-  --primary: #0284c7;
-  --primary-light: #0369a1;
-  --primary-dark: #075985;
-
-  --primary-subtle: rgba(2, 132, 199, 0.08);
-  --primary-border: rgba(2, 132, 199, 0.2);
+  /* ── Primary Accent: Academic Blue ── */
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-dark: #1d4ed8;
+  --primary-subtle: rgba(37, 99, 235, 0.08);
+  --primary-border: rgba(37, 99, 235, 0.2);
   --primary-glow: transparent;
 
   /* ── Semantic Accents ── */
-  --accent-emerald: #10b981;
-  --accent-amber: #f59e0b;
-  --accent-rose: #ef4444;
-  --accent-cyan: #06b6d4;
-  --accent-purple: #0284c7;
-  --accent-pink: #ef4444;
+  --accent-emerald: #059669; /* Success / Verified */
+  --accent-amber: #d97706; /* Warning / Pending */
+  --accent-rose: #e11d48; /* Danger / Rejected */
+  --accent-cyan: #0891b2; /* Metrics / Analytics */
+  --accent-purple: #7c3aed; /* Learning / Knowledge */
+  --accent-pink: #db2777; /* Highlights */
 
   /* ── Radii ── */
   --radius-sm: 6px;
@@ -105,10 +92,10 @@
   --radius-xl: 16px;
 
   /* ── Shadows ── */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08);
+  --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.1);
 }
 
 body {

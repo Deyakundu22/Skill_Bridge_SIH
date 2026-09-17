@@ -183,18 +183,23 @@ export const StudentApplicationDetailModal: React.FC<
               </div>
 
               {/* DATES & METRICS */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="p-3 bg-slate-950/40 border border-slate-800/80 rounded-xl space-y-1">
                   <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block">
                     Applied On
                   </span>
                   <span className="text-slate-200 font-medium flex items-center gap-1.5">
-                    <Calendar size={13} className="text-indigo-400" />
-                    {new Date(appDetail.appliedAt).toLocaleDateString("en-IN", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
+                    <Calendar size={14} className="text-indigo-400 shrink-0" />
+                    <span>
+                      {new Date(appDetail.appliedAt).toLocaleDateString(
+                        "en-IN",
+                        {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        },
+                      )}
+                    </span>
                   </span>
                 </div>
 
@@ -203,25 +208,32 @@ export const StudentApplicationDetailModal: React.FC<
                     Work Location
                   </span>
                   <span className="text-slate-200 font-medium flex items-center gap-1.5">
-                    <MapPin size={13} className="text-indigo-400" />
-                    {appDetail.opportunity?.workMode}{" "}
-                    {appDetail.opportunity?.location
-                      ? `• ${appDetail.opportunity.location}`
-                      : ""}
+                    <MapPin size={14} className="text-indigo-400 shrink-0" />
+                    <span>
+                      {appDetail.opportunity?.workMode}{" "}
+                      {appDetail.opportunity?.location
+                        ? `• ${appDetail.opportunity.location}`
+                        : ""}
+                    </span>
                   </span>
                 </div>
 
-                <div className="p-3 bg-slate-950/40 border border-slate-800/80 rounded-xl space-y-1 col-span-2 sm:col-span-1">
+                <div className="p-3 bg-slate-950/40 border border-slate-800/80 rounded-xl space-y-1 sm:col-span-2">
                   <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block">
                     Compensation
                   </span>
-                  <span className="text-slate-200 font-medium flex items-center gap-1.5">
-                    <IndianRupee size={13} className="text-emerald-400" />
-                    {formatStipend(
-                      appDetail.opportunity?.stipendMin,
-                      appDetail.opportunity?.stipendMax,
-                      appDetail.opportunity?.type,
-                    )}
+                  <span className="text-slate-200 font-medium flex items-center gap-1.5 text-sm">
+                    <IndianRupee
+                      size={15}
+                      className="text-emerald-400 shrink-0"
+                    />
+                    <span className="whitespace-normal">
+                      {formatStipend(
+                        appDetail.opportunity?.stipendMin,
+                        appDetail.opportunity?.stipendMax,
+                        appDetail.opportunity?.type,
+                      )}
+                    </span>
                   </span>
                 </div>
               </div>
