@@ -57,10 +57,15 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
   try {
     storedUserRole = storedUserStr ? JSON.parse(storedUserStr).role : "";
   } catch (_e) {}
-  
-  const effectiveRole = (user?.role || storedUserRole || "student").toString().toLowerCase();
+
+  const effectiveRole = (user?.role || storedUserRole || "student")
+    .toString()
+    .toLowerCase();
   const userRole = effectiveRole;
-  const isStudentView = effectiveRole === "student" || effectiveRole === "admin" || window.location.pathname.includes("student");
+  const isStudentView =
+    effectiveRole === "student" ||
+    effectiveRole === "admin" ||
+    window.location.pathname.includes("student");
 
   // Fetch student application status and match score breakdown
   const fetchMatchAndStatus = useCallback(async () => {
@@ -71,11 +76,14 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
 
     setLoadingMatch(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/student/opportunities/${opportunity.id}/match`, {
-        headers: {
-          Authorization: `Bearer ${authToken}`,
+      const res = await fetch(
+        `${API_BASE_URL}/student/opportunities/${opportunity.id}/match`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
         },
-      });
+      );
       const data = await res.json();
       if (res.ok && data.success) {
         setMatchData(data);
@@ -107,10 +115,15 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
 
   if (!isOpen || !opportunity) return null;
 
-  const formatStipend = (min: number | null, max: number | null, type: string) => {
+  const formatStipend = (
+    min: number | null,
+    max: number | null,
+    type: string,
+  ) => {
     if (!min && !max) return "Not specified";
     const unit = type === "internship" ? "/month" : "/annum";
-    if (min && max) return `₹${min.toLocaleString()} - ₹${max.toLocaleString()} ${unit}`;
+    if (min && max)
+      return `₹${min.toLocaleString()} - ₹${max.toLocaleString()} ${unit}`;
     if (min) return `From ₹${min.toLocaleString()} ${unit}`;
     if (max) return `Up to ₹${max.toLocaleString()} ${unit}`;
     return "Not specified";
@@ -122,8 +135,6 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
     deadline.setHours(23, 59, 59, 999);
     return new Date() > deadline;
   };
-
-
 
   const getMatchCategoryBadge = (category: string, score: number | null) => {
     if (score === null || category === "Match Unavailable") {
@@ -204,13 +215,22 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
 
                 {/* STUDENT MATCH SCORE BADGE IN HEADER */}
                 {userRole === "student" && matchData && (
-                  <div>{getMatchCategoryBadge(matchData.matchCategory, matchData.matchScore)}</div>
+                  <div>
+                    {getMatchCategoryBadge(
+                      matchData.matchCategory,
+                      matchData.matchScore,
+                    )}
+                  </div>
                 )}
               </div>
 
-              <h2 className="text-xl font-bold text-slate-100">{opportunity.title}</h2>
+              <h2 className="text-xl font-bold text-slate-100">
+                {opportunity.title}
+              </h2>
               {opportunity.company_name && (
-                <p className="text-xs text-indigo-400 font-semibold">{opportunity.company_name}</p>
+                <p className="text-xs text-indigo-400 font-semibold">
+                  {opportunity.company_name}
+                </p>
               )}
             </div>
 
@@ -225,7 +245,7 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
           {/* SCROLLABLE BODY */}
           <div className="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
             {/* METRICS GRID */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center gap-3">
                 <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400 shrink-0">
                   <MapPin size={18} />
@@ -234,22 +254,30 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
                   <small className="text-[10px] uppercase font-bold text-slate-500 block">
                     Mode / City
                   </small>
-                  <strong className="text-xs text-slate-200 block truncate">
-                    {opportunity.work_mode} {opportunity.location ? `• ${opportunity.location}` : ""}
+                  <strong
+                    className="text-xs text-slate-200 block truncate"
+                    title={`${opportunity.work_mode} ${opportunity.location ? `• ${opportunity.location}` : ""}`}
+                  >
+                    {opportunity.work_mode}{" "}
+                    {opportunity.location ? `• ${opportunity.location}` : ""}
                   </strong>
                 </div>
               </div>
 
-              <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center gap-3">
+              <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center gap-3 sm:col-span-2 lg:col-span-1">
                 <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-400 shrink-0">
                   <IndianRupee size={18} />
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <small className="text-[10px] uppercase font-bold text-slate-500 block">
                     Compensation
                   </small>
-                  <strong className="text-xs text-slate-200 block truncate">
-                    {formatStipend(opportunity.stipend_min, opportunity.stipend_max, opportunity.type)}
+                  <strong className="text-xs text-slate-200 block whitespace-normal break-words leading-tight">
+                    {formatStipend(
+                      opportunity.stipend_min,
+                      opportunity.stipend_max,
+                      opportunity.type,
+                    )}
                   </strong>
                 </div>
               </div>
@@ -278,7 +306,9 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
                   </small>
                   <strong className="text-xs text-slate-200 block truncate">
                     {opportunity.application_deadline
-                      ? new Date(opportunity.application_deadline).toLocaleDateString("en-IN", {
+                      ? new Date(
+                          opportunity.application_deadline,
+                        ).toLocaleDateString("en-IN", {
                           day: "numeric",
                           month: "short",
                           year: "numeric",
@@ -302,20 +332,30 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
                         Skill Match Analysis
                       </h3>
                       <p className="text-[11px] text-slate-400">
-                        Calculated dynamically from your verified skill benchmarks
+                        Calculated dynamically from your verified skill
+                        benchmarks
                       </p>
                     </div>
                   </div>
 
-                  {loadingMatch && <Loader2 size={16} className="animate-spin text-indigo-400" />}
+                  {loadingMatch && (
+                    <Loader2
+                      size={16}
+                      className="animate-spin text-indigo-400"
+                    />
+                  )}
                 </div>
 
                 {!matchData?.hasStudentSkills ? (
                   <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center justify-between gap-3 text-amber-300 text-xs">
                     <div className="flex items-center gap-2">
-                      <AlertTriangle size={18} className="text-amber-400 shrink-0" />
+                      <AlertTriangle
+                        size={18}
+                        className="text-amber-400 shrink-0"
+                      />
                       <span>
-                        Complete your skill profile or take assessments to get personalized match scores.
+                        Complete your skill profile or take assessments to get
+                        personalized match scores.
                       </span>
                     </div>
                     <button
@@ -330,7 +370,8 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
                   </div>
                 ) : matchData.requiredSkills.length === 0 ? (
                   <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl text-center text-xs text-slate-400">
-                    No specific skill requirements defined by industry for this opportunity.
+                    No specific skill requirements defined by industry for this
+                    opportunity.
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -371,19 +412,23 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
                                   ⚠
                                 </span>
                               )}
-                              <span className="font-bold text-slate-200">{sk.skillName}</span>
+                              <span className="font-bold text-slate-200">
+                                {sk.skillName}
+                              </span>
                             </div>
 
                             <div className="flex items-center gap-3">
                               <div className="text-[11px] font-semibold">
                                 {sk.status === "matched" && (
                                   <span className="text-emerald-400">
-                                    Level: {sk.studentProficiency}% • Req: {sk.requiredProficiency}%
+                                    Level: {sk.studentProficiency}% • Req:{" "}
+                                    {sk.requiredProficiency}%
                                   </span>
                                 )}
                                 {sk.status === "partial" && (
                                   <span className="text-amber-400">
-                                    Level: {sk.studentProficiency}% • Req: {sk.requiredProficiency}%
+                                    Level: {sk.studentProficiency}% • Req:{" "}
+                                    {sk.requiredProficiency}%
                                   </span>
                                 )}
                                 {sk.status === "missing" && (
@@ -408,7 +453,9 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
                                 }`}
                               >
                                 <Award size={12} />
-                                {sk.status === "matched" ? "Re-assess" : "Assess Skill"}
+                                {sk.status === "matched"
+                                  ? "Re-assess"
+                                  : "Assess Skill"}
                               </button>
                             </div>
                           </div>
@@ -420,8 +467,8 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
                                 sk.status === "matched"
                                   ? "bg-emerald-400"
                                   : sk.status === "partial"
-                                  ? "bg-amber-400"
-                                  : "bg-rose-500/40"
+                                    ? "bg-amber-400"
+                                    : "bg-rose-500/40"
                               }`}
                               style={{ width: `${sk.matchPercentage}%` }}
                             />
@@ -433,18 +480,27 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
                 )}
 
                 {/* SKILL GAP SUMMARY BANNER */}
-                {matchData?.skillsToImprove && matchData.skillsToImprove.length > 0 && (
-                  <div className="pt-3 border-t border-slate-800/80">
-                    <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-2 text-xs text-amber-300">
-                      <PieChart size={16} className="text-amber-400 shrink-0" />
-                      <span>
-                        <strong>Skill Improvement Tip:</strong> Take assessments for{" "}
-                        <strong>{matchData.skillsToImprove.map((s) => s.skillName).join(", ")}</strong>{" "}
-                        above to increase your match percentage!
-                      </span>
+                {matchData?.skillsToImprove &&
+                  matchData.skillsToImprove.length > 0 && (
+                    <div className="pt-3 border-t border-slate-800/80">
+                      <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-2 text-xs text-amber-300">
+                        <PieChart
+                          size={16}
+                          className="text-amber-400 shrink-0"
+                        />
+                        <span>
+                          <strong>Skill Improvement Tip:</strong> Take
+                          assessments for{" "}
+                          <strong>
+                            {matchData.skillsToImprove
+                              .map((s) => s.skillName)
+                              .join(", ")}
+                          </strong>{" "}
+                          above to increase your match percentage!
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             )}
 
@@ -462,7 +518,8 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
             {opportunity.eligibility && (
               <div className="space-y-2 pt-4 border-t border-slate-800">
                 <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                  <GraduationCap size={16} className="text-indigo-400" /> Eligibility Criteria
+                  <GraduationCap size={16} className="text-indigo-400" />{" "}
+                  Eligibility Criteria
                 </h3>
                 <p className="text-xs text-slate-300 leading-relaxed bg-slate-950/60 border border-slate-800/80 p-3 rounded-xl">
                   {opportunity.eligibility}
@@ -474,16 +531,21 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
             {userRole !== "student" && (
               <div className="space-y-3 pt-4 border-t border-slate-800">
                 <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles size={16} className="text-indigo-400" /> Required Skill Benchmarks
+                  <Sparkles size={16} className="text-indigo-400" /> Required
+                  Skill Benchmarks
                 </h3>
 
-                {opportunity.requiredSkills && opportunity.requiredSkills.length > 0 ? (
+                {opportunity.requiredSkills &&
+                opportunity.requiredSkills.length > 0 ? (
                   <div className="space-y-3">
                     {opportunity.requiredSkills.map((s, idx) => (
                       <div key={idx} className="space-y-1.5">
                         <div className="flex justify-between items-center text-xs">
                           <span className="font-semibold text-slate-200 flex items-center gap-1.5">
-                            <CheckCircle2 size={14} className="text-emerald-400" />
+                            <CheckCircle2
+                              size={14}
+                              className="text-emerald-400"
+                            />
                             {s.skill_name || `Skill #${s.skill_id}`}
                           </span>
                           <span className="font-bold text-indigo-400">

@@ -18,6 +18,9 @@ import {
   Globe,
   RotateCw,
   Bookmark,
+  Clock,
+  Award,
+  XCircle,
 } from "lucide-react";
 import type { Opportunity } from "../../types/opportunity";
 import type { RecommendedOpportunity } from "../../types/matching";
@@ -30,11 +33,18 @@ import { API_BASE_URL } from "../../config/api";
 const StudentOpportunities: React.FC = () => {
   const { token, user } = useAuth();
   const userRole = user?.role ? String(user.role).toLowerCase() : "student";
-  const isAcademicianRole = ["academician", "faculty", "institution", "institute"].includes(userRole);
+  const isAcademicianRole = [
+    "academician",
+    "faculty",
+    "institution",
+    "institute",
+  ].includes(userRole);
 
   const [viewMode, setViewMode] = useState<"recommended" | "all">("all");
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
-  const [recommendations, setRecommendations] = useState<RecommendedOpportunity[]>([]);
+  const [recommendations, setRecommendations] = useState<
+    RecommendedOpportunity[]
+  >([]);
   const [savedIds, setSavedIds] = useState<Set<number>>(new Set());
 
   const [loading, setLoading] = useState(true);
@@ -43,7 +53,8 @@ const StudentOpportunities: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState<string>("");
 
-  const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
+  const [selectedOpportunity, setSelectedOpportunity] =
+    useState<Opportunity | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
 
@@ -51,6 +62,48 @@ const StudentOpportunities: React.FC = () => {
     skillId: number;
     skillName: string;
   } | null>(null);
+
+  // Check if deadline has passed
+  const isDeadlinePassed = (deadlineDateString?: string | null): boolean => {
+    if (!deadlineDateString) return false;
+    const deadline = new Date(deadlineDateString);
+    return deadline.getTime() < Date.now();
+  };
+
+  // Helper to render current application status badge
+  const renderApplicationStatusBadge = (status?: string | null) => {
+    if (!status) return null;
+    const normStatus = status.toLowerCase();
+
+    switch (normStatus) {
+      case "selected":
+      case "accepted":
+        return (
+          <span className="px-2.5 py-1 bg-[var(--accent-emerald-bg)] border border-[var(--accent-emerald)]/30 text-[var(--accent-emerald)] rounded-xl text-xs font-bold flex items-center gap-1 shrink-0">
+            <Award size={13} /> Selected 🎉
+          </span>
+        );
+      case "shortlisted":
+        return (
+          <span className="px-2.5 py-1 bg-[var(--accent-amber-bg)] border border-[var(--accent-amber)]/30 text-[var(--accent-amber)] rounded-xl text-xs font-bold flex items-center gap-1 shrink-0">
+            <Sparkles size={13} /> Shortlisted
+          </span>
+        );
+      case "rejected":
+      case "not selected":
+        return (
+          <span className="px-2.5 py-1 bg-[var(--accent-rose-bg)] border border-[var(--accent-rose)]/30 text-[var(--accent-rose)] rounded-xl text-xs font-bold flex items-center gap-1 shrink-0">
+            <XCircle size={13} /> Not Selected
+          </span>
+        );
+      default:
+        return (
+          <span className="px-2.5 py-1 bg-[var(--accent-cyan-bg)] border border-[var(--accent-cyan)]/30 text-[var(--accent-cyan)] rounded-xl text-xs font-bold flex items-center gap-1 shrink-0">
+            <CheckCircle2 size={13} /> Already Applied
+          </span>
+        );
+    }
+  };
 
   const fetchSavedIds = useCallback(async () => {
     const authToken = token || localStorage.getItem("skillbridge_token");
@@ -117,7 +170,7 @@ const StudentOpportunities: React.FC = () => {
           headers: {
             Authorization: `Bearer ${authToken}`,
           },
-        }
+        },
       );
 
       const data = await res.json();
@@ -127,7 +180,7 @@ const StudentOpportunities: React.FC = () => {
       }
 
       setRecommendations(
-        Array.isArray(data.recommendations) ? data.recommendations : []
+        Array.isArray(data.recommendations) ? data.recommendations : [],
       );
     } catch (err: any) {
       console.error("fetchRecommendations error:", err);
@@ -158,7 +211,9 @@ const StudentOpportunities: React.FC = () => {
         url += `?${params.toString()}`;
       }
 
-      const res = await fetch(url);
+      const res = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       const data = await res.json();
 
       if (!res.ok || !data.success) {
@@ -166,7 +221,7 @@ const StudentOpportunities: React.FC = () => {
       }
 
       setOpportunities(
-        Array.isArray(data.opportunities) ? data.opportunities : []
+        Array.isArray(data.opportunities) ? data.opportunities : [],
       );
     } catch (err: any) {
       console.error("fetchAllOpportunities error:", err);
@@ -174,7 +229,7 @@ const StudentOpportunities: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [typeFilter, searchTerm, isAcademicianRole]);
+  }, [typeFilter, searchTerm, isAcademicianRole, token]);
 
   useEffect(() => {
     if (viewMode === "recommended") {
@@ -187,7 +242,7 @@ const StudentOpportunities: React.FC = () => {
   const formatStipend = (
     min: number | null,
     max: number | null,
-    type: string
+    type: string,
   ) => {
     if (!min && !max) return "Disclosed on interview";
 
@@ -268,23 +323,16 @@ const StudentOpportunities: React.FC = () => {
     })
     .sort((a, b) => {
       const scoreA =
-        a.matchScore !== null && a.matchScore !== undefined
-          ? a.matchScore
-          : -1;
+        a.matchScore !== null && a.matchScore !== undefined ? a.matchScore : -1;
 
       const scoreB =
-        b.matchScore !== null && b.matchScore !== undefined
-          ? b.matchScore
-          : -1;
+        b.matchScore !== null && b.matchScore !== undefined ? b.matchScore : -1;
 
       if (scoreB !== scoreA) {
         return scoreB - scoreA;
       }
 
-      return (
-        new Date(b.createdAt).getTime() -
-        new Date(a.createdAt).getTime()
-      );
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
   return (
@@ -435,11 +483,7 @@ const StudentOpportunities: React.FC = () => {
             >
               <RotateCw
                 size={15}
-                className={
-                  loading
-                    ? "animate-spin text-[var(--primary)]"
-                    : ""
-                }
+                className={loading ? "animate-spin text-[var(--primary)]" : ""}
               />
             </button>
           </div>
@@ -484,127 +528,139 @@ const StudentOpportunities: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredRecommendations.map((rec) => (
-                <div
-                  key={rec.opportunityId}
-                  className="group bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)] border border-[var(--border-color)] hover:border-[var(--primary-border)] rounded-2xl p-5 shadow-[var(--shadow-md)] hover:shadow-[var(--shadow-lg)] transition-all duration-300 flex flex-col justify-between space-y-4"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-[var(--primary-subtle)] border border-[var(--primary-border)] flex items-center justify-center text-[var(--primary)] font-bold shrink-0">
-                          {rec.companyLogo ? (
-                            <img
-                              src={rec.companyLogo}
-                              alt={rec.companyName}
-                              className="w-full h-full object-cover rounded-xl"
-                            />
-                          ) : (
-                            (rec.companyName || "C").charAt(0).toUpperCase()
-                          )}
-                        </div>
+              {filteredRecommendations.map((rec) => {
+                const expired = isDeadlinePassed(rec.applicationDeadline);
+                const hasApplied = rec.hasApplied;
+                const applicationStatus =
+                  (rec as any).applicationStatus ||
+                  (rec.hasApplied ? "applied" : null);
 
-                        <div>
-                          <span className="text-[11px] font-semibold text-[var(--primary)] uppercase tracking-wider block">
-                            {rec.companyName || "Verified Partner"}
-                          </span>
-
-                          <h3 className="text-base font-bold text-[var(--text-primary)] group-hover:text-[var(--primary)] transition-colors">
-                            {rec.title}
-                          </h3>
-                        </div>
+                return (
+                  <div
+                    key={rec.opportunityId}
+                    className="relative overflow-hidden group bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)] border border-[var(--border-color)] hover:border-[var(--primary-border)] rounded-2xl p-5 shadow-[var(--shadow-md)] hover:shadow-[var(--shadow-lg)] transition-all duration-300 flex flex-col justify-between space-y-4"
+                  >
+                    {expired && (
+                      <div className="absolute top-6 -right-10 bg-red-600/90 text-white font-black text-[10px] uppercase tracking-widest py-1 px-10 rotate-45 shadow-md border-y border-red-400 select-none pointer-events-none z-10">
+                        Expired
                       </div>
-
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span
-                          className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                            rec.type === "internship"
-                              ? "bg-[var(--accent-cyan-bg)] border border-[var(--accent-cyan)]/30 text-[var(--accent-cyan)]"
-                              : "bg-[var(--accent-purple-bg)] border border-[var(--accent-purple)]/30 text-[var(--accent-purple)]"
-                          }`}
-                        >
-                          {rec.type === "internship"
-                            ? "Internship"
-                            : "Full-Time"}
-                        </span>
-
-                        <button
-                          onClick={(e) =>
-                            toggleBookmark(rec.opportunityId, e)
-                          }
-                          className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
-                            savedIds.has(rec.opportunityId)
-                              ? "bg-[var(--accent-amber-bg)] border-[var(--accent-amber)]/40 text-[var(--accent-amber)]"
-                              : "bg-[var(--bg-muted)] border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
-                          }`}
-                          title={
-                            savedIds.has(rec.opportunityId)
-                              ? "Remove from saved"
-                              : "Save opportunity"
-                          }
-                        >
-                          <Bookmark
-                            size={14}
-                            className={
-                              savedIds.has(rec.opportunityId)
-                                ? "fill-[var(--accent-amber)] text-[var(--accent-amber)]"
-                                : ""
-                            }
-                          />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="py-1">
-                      {renderMatchBadge(
-                        rec.matchScore,
-                        rec.matchCategory
-                      )}
-                    </div>
-
-                    <div className="flex flex-wrap gap-y-1.5 gap-x-3 text-xs text-[var(--text-muted)]">
-                      <span className="flex items-center gap-1">
-                        <MapPin
-                          size={12}
-                          className="text-[var(--primary)]"
-                        />
-                        {rec.workMode}
-                        {rec.location ? ` • ${rec.location}` : ""}
-                      </span>
-
-                      <span className="flex items-center gap-1">
-                        <IndianRupee
-                          size={12}
-                          className="text-[var(--accent-emerald)]"
-                        />
-                        {formatStipend(
-                          rec.stipendMin || null,
-                          rec.stipendMax || null,
-                          rec.type
-                        )}
-                      </span>
-
-                      {rec.applicationDeadline && (
-                        <span className="flex items-center gap-1">
-                          <Calendar
-                            size={12}
-                            className="text-[var(--accent-amber)]"
-                          />
-                          {new Date(
-                            rec.applicationDeadline
-                          ).toLocaleDateString("en-IN")}
-                        </span>
-                      )}
-                    </div>
-
-                    {rec.description && (
-                      <p className="text-xs text-[var(--text-secondary)] line-clamp-3 leading-relaxed bg-[var(--bg-muted)] p-2.5 rounded-xl border border-[var(--border-subtle)]">
-                        {rec.description}
-                      </p>
                     )}
 
-                    {rec.requiredSkills &&
-                      rec.requiredSkills.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-[var(--primary-subtle)] border border-[var(--primary-border)] flex items-center justify-center text-[var(--primary)] font-bold shrink-0">
+                            {rec.companyLogo ? (
+                              <img
+                                src={rec.companyLogo}
+                                alt={rec.companyName}
+                                className="w-full h-full object-cover rounded-xl"
+                              />
+                            ) : (
+                              (rec.companyName || "C").charAt(0).toUpperCase()
+                            )}
+                          </div>
+
+                          <div>
+                            <span className="text-[11px] font-semibold text-[var(--primary)] uppercase tracking-wider block">
+                              {rec.companyName || "Verified Partner"}
+                            </span>
+
+                            <h3 className="text-base font-bold text-[var(--text-primary)] group-hover:text-[var(--primary)] transition-colors">
+                              {rec.title}
+                            </h3>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                              rec.type === "internship"
+                                ? "bg-[var(--accent-cyan-bg)] border border-[var(--accent-cyan)]/30 text-[var(--accent-cyan)]"
+                                : "bg-[var(--accent-purple-bg)] border border-[var(--accent-purple)]/30 text-[var(--accent-purple)]"
+                            }`}
+                          >
+                            {rec.type === "internship"
+                              ? "Internship"
+                              : "Full-Time"}
+                          </span>
+
+                          <button
+                            onClick={(e) =>
+                              toggleBookmark(rec.opportunityId, e)
+                            }
+                            className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                              savedIds.has(rec.opportunityId)
+                                ? "bg-[var(--accent-amber-bg)] border-[var(--accent-amber)]/40 text-[var(--accent-amber)]"
+                                : "bg-[var(--bg-muted)] border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
+                            }`}
+                            title={
+                              savedIds.has(rec.opportunityId)
+                                ? "Remove from saved"
+                                : "Save opportunity"
+                            }
+                          >
+                            <Bookmark
+                              size={14}
+                              className={
+                                savedIds.has(rec.opportunityId)
+                                  ? "fill-[var(--accent-amber)] text-[var(--accent-amber)]"
+                                  : ""
+                              }
+                            />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="py-1">
+                        {renderMatchBadge(rec.matchScore, rec.matchCategory)}
+                      </div>
+
+                      <div className="flex flex-wrap gap-y-1.5 gap-x-3 text-xs text-[var(--text-muted)]">
+                        <span className="flex items-center gap-1">
+                          <MapPin size={12} className="text-[var(--primary)]" />
+                          {rec.workMode}
+                          {rec.location ? ` • ${rec.location}` : ""}
+                        </span>
+
+                        <span className="flex items-center gap-1">
+                          <IndianRupee
+                            size={12}
+                            className="text-[var(--accent-emerald)]"
+                          />
+                          {formatStipend(
+                            rec.stipendMin || null,
+                            rec.stipendMax || null,
+                            rec.type,
+                          )}
+                        </span>
+
+                        {rec.applicationDeadline && (
+                          <span
+                            className={`flex items-center gap-1 ${expired ? "text-red-500 font-medium" : ""}`}
+                          >
+                            <Calendar
+                              size={12}
+                              className={
+                                expired
+                                  ? "text-red-500"
+                                  : "text-[var(--accent-amber)]"
+                              }
+                            />
+                            {new Date(
+                              rec.applicationDeadline,
+                            ).toLocaleDateString("en-IN")}
+                          </span>
+                        )}
+                      </div>
+
+                      {rec.description && (
+                        <p className="text-xs text-[var(--text-secondary)] line-clamp-3 leading-relaxed bg-[var(--bg-muted)] p-2.5 rounded-xl border border-[var(--border-subtle)]">
+                          {rec.description}
+                        </p>
+                      )}
+
+                      {rec.requiredSkills && rec.requiredSkills.length > 0 && (
                         <div className="pt-2 border-t border-[var(--border-subtle)] space-y-1.5">
                           <span className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider block">
                             Skill Compatibility Breakdown:
@@ -626,8 +682,8 @@ const StudentOpportunities: React.FC = () => {
                                   sk.status === "matched"
                                     ? "bg-[var(--accent-emerald-bg)] hover:bg-[var(--accent-emerald-bg)] border-[var(--accent-emerald)]/25 text-[var(--accent-emerald)]"
                                     : sk.status === "partial"
-                                    ? "bg-[var(--accent-amber-bg)] hover:bg-[var(--accent-amber-bg)] border-[var(--accent-amber)]/25 text-[var(--accent-amber)]"
-                                    : "bg-[var(--accent-rose-bg)] hover:bg-[var(--accent-rose-bg)] border-[var(--accent-rose)]/25 text-[var(--accent-rose)]"
+                                      ? "bg-[var(--accent-amber-bg)] hover:bg-[var(--accent-amber-bg)] border-[var(--accent-amber)]/25 text-[var(--accent-amber)]"
+                                      : "bg-[var(--accent-rose-bg)] hover:bg-[var(--accent-rose-bg)] border-[var(--accent-rose)]/25 text-[var(--accent-rose)]"
                                 }`}
                               >
                                 {sk.status === "matched" && "✓"}
@@ -639,59 +695,94 @@ const StudentOpportunities: React.FC = () => {
                           </div>
                         </div>
                       )}
+                    </div>
+
+                    <div className="pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
+                      {hasApplied ? (
+                        renderApplicationStatusBadge(applicationStatus)
+                      ) : (
+                        <span className="text-xs text-[var(--text-muted)] font-medium">
+                          Deterministic Match
+                        </span>
+                      )}
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-muted)] hover:bg-[var(--bg-card-hover)] text-[var(--text-primary)] rounded-xl text-xs font-semibold transition-all cursor-pointer border border-[var(--border-color)]"
+                          onClick={() => {
+                            setSelectedOpportunity({
+                              id: rec.opportunityId,
+                              industry_id: 0,
+                              type: rec.type,
+                              title: rec.title,
+                              description: rec.description || "",
+                              location: rec.location || null,
+                              work_mode: rec.workMode,
+                              stipend_min: rec.stipendMin || null,
+                              stipend_max: rec.stipendMax || null,
+                              duration: null,
+                              eligibility: null,
+                              application_deadline:
+                                rec.applicationDeadline || null,
+                              status: "published",
+                              created_at: rec.createdAt,
+                              updated_at: rec.createdAt,
+                              requiredSkills: (rec as any).requiredSkills || [],
+                            });
+                            setIsDetailModalOpen(true);
+                          }}
+                        >
+                          <Eye size={14} /> Details
+                        </button>
+
+                        {!hasApplied &&
+                          (expired ? (
+                            <button
+                              disabled
+                              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gray-400/20 text-gray-400 border border-gray-400/30 rounded-xl text-xs font-semibold cursor-not-allowed shadow-none"
+                            >
+                              <Clock size={14} /> Deadline Passed
+                            </button>
+                          ) : (
+                            <button
+                              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--text-on-primary)] rounded-xl text-xs font-semibold transition-all shadow-md cursor-pointer"
+                              onClick={() => {
+                                setSelectedOpportunity({
+                                  id: rec.opportunityId,
+                                  industry_id: 0,
+                                  type: rec.type,
+                                  title: rec.title,
+                                  description: rec.description || "",
+                                  location: rec.location || null,
+                                  work_mode: rec.workMode,
+                                  stipend_min: rec.stipendMin || null,
+                                  stipend_max: rec.stipendMax || null,
+                                  duration: null,
+                                  eligibility: null,
+                                  application_deadline:
+                                    rec.applicationDeadline || null,
+                                  status: "published",
+                                  created_at: rec.createdAt,
+                                  updated_at: rec.createdAt,
+                                  requiredSkills:
+                                    (rec as any).requiredSkills || [],
+                                });
+                                setIsApplyModalOpen(true);
+                              }}
+                            >
+                              <Send size={14} /> Apply
+                            </button>
+                          ))}
+                      </div>
+                    </div>
                   </div>
-
-                  <div className="pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between">
-                    {rec.hasApplied ? (
-                      <span className="px-2.5 py-1 bg-[var(--accent-emerald-bg)] border border-[var(--accent-emerald)]/25 text-[var(--accent-emerald)] rounded-lg text-xs font-bold flex items-center gap-1">
-                        <CheckCircle2 size={12} /> Already Applied
-                      </span>
-                    ) : (
-                      <span className="text-xs text-[var(--text-muted)] font-medium">
-                        Deterministic Match
-                      </span>
-                    )}
-
-                    <button
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--text-on-primary)] rounded-xl text-xs font-semibold transition-all shadow-md cursor-pointer"
-                      onClick={() => {
-                        setSelectedOpportunity({
-                          id: rec.opportunityId,
-                          industry_id: 0,
-                          type: rec.type,
-                          title: rec.title,
-                          description: rec.description || "",
-                          location: rec.location || null,
-                          work_mode: rec.workMode,
-                          stipend_min: rec.stipendMin || null,
-                          stipend_max: rec.stipendMax || null,
-                          duration: null,
-                          eligibility: null,
-                          application_deadline:
-                            rec.applicationDeadline || null,
-                          status: "published",
-                          created_at: rec.createdAt,
-                          updated_at: rec.createdAt,
-                          requiredSkills:
-                            (rec as any).requiredSkills || [],
-                        });
-
-                        setIsDetailModalOpen(true);
-                      }}
-                    >
-                      <Eye size={14} /> View Details
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )
         ) : loading ? (
           <div className="flex flex-col items-center justify-center py-16 bg-[var(--bg-muted)] border border-[var(--border-color)] rounded-2xl space-y-4">
-            <Loader2
-              className="animate-spin text-[var(--primary)]"
-              size={36}
-            />
+            <Loader2 className="animate-spin text-[var(--primary)]" size={36} />
 
             <p className="text-[var(--text-muted)] text-sm font-medium">
               Loading verified industry opportunities...
@@ -714,118 +805,134 @@ const StudentOpportunities: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {opportunities.map((opp) => (
-              <div
-                key={opp.id}
-                className="group bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)] border border-[var(--border-color)] hover:border-[var(--primary-border)] rounded-2xl p-5 shadow-[var(--shadow-md)] hover:shadow-[var(--shadow-lg)] transition-all duration-300 flex flex-col justify-between space-y-4"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[var(--primary-subtle)] border border-[var(--primary-border)] flex items-center justify-center text-[var(--primary)] font-bold shrink-0">
-                        {opp.company_logo ? (
-                          <img
-                            src={opp.company_logo}
-                            alt={opp.company_name}
-                            className="w-full h-full object-cover rounded-xl"
-                          />
-                        ) : (
-                          (opp.company_name || "C")
-                            .charAt(0)
-                            .toUpperCase()
-                        )}
+            {opportunities.map((opp) => {
+              const expired = isDeadlinePassed(opp.application_deadline);
+              const hasApplied = Boolean(
+                (opp as any).has_applied || (opp as any).hasApplied,
+              );
+              const applicationStatus =
+                (opp as any).application_status ||
+                (opp as any).applicationStatus ||
+                (hasApplied ? "applied" : null);
+
+              return (
+                <div
+                  key={opp.id}
+                  className="relative overflow-hidden group bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)] border border-[var(--border-color)] hover:border-[var(--primary-border)] rounded-2xl p-5 shadow-[var(--shadow-md)] hover:shadow-[var(--shadow-lg)] transition-all duration-300 flex flex-col justify-between space-y-4"
+                >
+                  {expired && (
+                    <div className="absolute top-6 -right-10 bg-red-600/90 text-white font-black text-[10px] uppercase tracking-widest py-1 px-10 rotate-45 shadow-md border-y border-red-400 select-none pointer-events-none z-10">
+                      Expired
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-[var(--primary-subtle)] border border-[var(--primary-border)] flex items-center justify-center text-[var(--primary)] font-bold shrink-0">
+                          {opp.company_logo ? (
+                            <img
+                              src={opp.company_logo}
+                              alt={opp.company_name}
+                              className="w-full h-full object-cover rounded-xl"
+                            />
+                          ) : (
+                            (opp.company_name || "C").charAt(0).toUpperCase()
+                          )}
+                        </div>
+
+                        <div>
+                          <span className="text-[11px] font-semibold text-[var(--primary)] uppercase tracking-wider block">
+                            {opp.company_name || "Verified Partner"}
+                          </span>
+
+                          <h3 className="text-base font-bold text-[var(--text-primary)] group-hover:text-[var(--primary)] transition-colors">
+                            {opp.title}
+                          </h3>
+                        </div>
                       </div>
 
-                      <div>
-                        <span className="text-[11px] font-semibold text-[var(--primary)] uppercase tracking-wider block">
-                          {opp.company_name || "Verified Partner"}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span
+                          className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${
+                            opp.type === "internship"
+                              ? "bg-[var(--accent-cyan-bg)] border border-[var(--accent-cyan)]/30 text-[var(--accent-cyan)]"
+                              : "bg-[var(--accent-purple-bg)] border border-[var(--accent-purple)]/30 text-[var(--accent-purple)]"
+                          }`}
+                        >
+                          {opp.type === "internship"
+                            ? "Internship"
+                            : "Full-Time Job"}
                         </span>
 
-                        <h3 className="text-base font-bold text-[var(--text-primary)] group-hover:text-[var(--primary)] transition-colors">
-                          {opp.title}
-                        </h3>
+                        <button
+                          onClick={(e) => toggleBookmark(opp.id, e)}
+                          className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                            savedIds.has(opp.id)
+                              ? "bg-[var(--accent-amber-bg)] border-[var(--accent-amber)]/40 text-[var(--accent-amber)]"
+                              : "bg-[var(--bg-muted)] border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
+                          }`}
+                          title={
+                            savedIds.has(opp.id)
+                              ? "Remove from saved"
+                              : "Save opportunity"
+                          }
+                        >
+                          <Bookmark
+                            size={14}
+                            className={
+                              savedIds.has(opp.id)
+                                ? "fill-[var(--accent-amber)] text-[var(--accent-amber)]"
+                                : ""
+                            }
+                          />
+                        </button>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span
-                        className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${
-                          opp.type === "internship"
-                            ? "bg-[var(--accent-cyan-bg)] border border-[var(--accent-cyan)]/30 text-[var(--accent-cyan)]"
-                            : "bg-[var(--accent-purple-bg)] border border-[var(--accent-purple)]/30 text-[var(--accent-purple)]"
-                        }`}
-                      >
-                        {opp.type === "internship"
-                          ? "Internship"
-                          : "Full-Time Job"}
-                      </span>
+                    <p className="text-xs text-[var(--text-secondary)] line-clamp-3 leading-relaxed">
+                      {opp.description}
+                    </p>
 
-                      <button
-                        onClick={(e) => toggleBookmark(opp.id, e)}
-                        className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
-                          savedIds.has(opp.id)
-                            ? "bg-[var(--accent-amber-bg)] border-[var(--accent-amber)]/40 text-[var(--accent-amber)]"
-                            : "bg-[var(--bg-muted)] border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
-                        }`}
-                        title={
-                          savedIds.has(opp.id)
-                            ? "Remove from saved"
-                            : "Save opportunity"
-                        }
-                      >
-                        <Bookmark
-                          size={14}
-                          className={
-                            savedIds.has(opp.id)
-                              ? "fill-[var(--accent-amber)] text-[var(--accent-amber)]"
-                              : ""
-                          }
-                        />
-                      </button>
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-[var(--text-secondary)] line-clamp-3 leading-relaxed">
-                    {opp.description}
-                  </p>
-
-                  <div className="pt-2 flex flex-wrap gap-y-2 gap-x-4 text-xs text-[var(--text-muted)]">
-                    <span className="flex items-center gap-1.5">
-                      <MapPin
-                        size={13}
-                        className="text-[var(--primary)]"
-                      />
-                      {opp.work_mode}
-                      {opp.location ? ` • ${opp.location}` : ""}
-                    </span>
-
-                    <span className="flex items-center gap-1.5">
-                      <IndianRupee
-                        size={13}
-                        className="text-[var(--accent-emerald)]"
-                      />
-                      {formatStipend(
-                        opp.stipend_min,
-                        opp.stipend_max,
-                        opp.type
-                      )}
-                    </span>
-
-                    {opp.application_deadline && (
+                    <div className="pt-2 flex flex-wrap gap-y-2 gap-x-4 text-xs text-[var(--text-muted)]">
                       <span className="flex items-center gap-1.5">
-                        <Calendar
-                          size={13}
-                          className="text-[var(--accent-amber)]"
-                        />
-                        {new Date(
-                          opp.application_deadline
-                        ).toLocaleDateString("en-IN")}
+                        <MapPin size={13} className="text-[var(--primary)]" />
+                        {opp.work_mode}
+                        {opp.location ? ` • ${opp.location}` : ""}
                       </span>
-                    )}
-                  </div>
 
-                  {opp.requiredSkills &&
-                    opp.requiredSkills.length > 0 && (
+                      <span className="flex items-center gap-1.5">
+                        <IndianRupee
+                          size={13}
+                          className="text-[var(--accent-emerald)]"
+                        />
+                        {formatStipend(
+                          opp.stipend_min,
+                          opp.stipend_max,
+                          opp.type,
+                        )}
+                      </span>
+
+                      {opp.application_deadline && (
+                        <span
+                          className={`flex items-center gap-1.5 ${expired ? "text-red-500 font-medium" : ""}`}
+                        >
+                          <Calendar
+                            size={13}
+                            className={
+                              expired
+                                ? "text-red-500"
+                                : "text-[var(--accent-amber)]"
+                            }
+                          />
+                          {new Date(
+                            opp.application_deadline,
+                          ).toLocaleDateString("en-IN")}
+                        </span>
+                      )}
+                    </div>
+
+                    {opp.requiredSkills && opp.requiredSkills.length > 0 && (
                       <div className="pt-3 border-t border-[var(--border-subtle)] space-y-1.5">
                         <span className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1">
                           <Sparkles
@@ -845,45 +952,59 @@ const StudentOpportunities: React.FC = () => {
                                 size={11}
                                 className="text-[var(--accent-emerald)]"
                               />
-                              {s.skill_name ||
-                                `Skill #${s.skill_id}`}{" "}
-                              (≥{s.required_proficiency}%)
+                              {s.skill_name || `Skill #${s.skill_id}`} (≥
+                              {s.required_proficiency}%)
                             </span>
                           ))}
                         </div>
                       </div>
                     )}
-                </div>
+                  </div>
 
-                <div className="pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between">
-                  <span className="text-xs text-[var(--text-muted)] font-medium">
-                    Verified Industry Listing
-                  </span>
+                  <div className="pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
+                    {hasApplied ? (
+                      renderApplicationStatusBadge(applicationStatus)
+                    ) : (
+                      <span className="text-xs text-[var(--text-muted)] font-medium">
+                        Verified Industry Listing
+                      </span>
+                    )}
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-muted)] hover:bg-[var(--bg-card-hover)] text-[var(--text-primary)] rounded-xl text-xs font-semibold transition-all cursor-pointer border border-[var(--border-color)]"
-                      onClick={() => {
-                        setSelectedOpportunity(opp);
-                        setIsDetailModalOpen(true);
-                      }}
-                    >
-                      <Eye size={14} /> Details
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-muted)] hover:bg-[var(--bg-card-hover)] text-[var(--text-primary)] rounded-xl text-xs font-semibold transition-all cursor-pointer border border-[var(--border-color)]"
+                        onClick={() => {
+                          setSelectedOpportunity(opp);
+                          setIsDetailModalOpen(true);
+                        }}
+                      >
+                        <Eye size={14} /> Details
+                      </button>
 
-                    <button
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--text-on-primary)] rounded-xl text-xs font-semibold transition-all shadow-md cursor-pointer"
-                      onClick={() => {
-                        setSelectedOpportunity(opp);
-                        setIsApplyModalOpen(true);
-                      }}
-                    >
-                      <Send size={14} /> Apply
-                    </button>
+                      {!hasApplied &&
+                        (expired ? (
+                          <button
+                            disabled
+                            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gray-400/20 text-gray-400 border border-gray-400/30 rounded-xl text-xs font-semibold cursor-not-allowed shadow-none"
+                          >
+                            <Clock size={14} /> Deadline Passed
+                          </button>
+                        ) : (
+                          <button
+                            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--text-on-primary)] rounded-xl text-xs font-semibold transition-all shadow-md cursor-pointer"
+                            onClick={() => {
+                              setSelectedOpportunity(opp);
+                              setIsApplyModalOpen(true);
+                            }}
+                          >
+                            <Send size={14} /> Apply
+                          </button>
+                        ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

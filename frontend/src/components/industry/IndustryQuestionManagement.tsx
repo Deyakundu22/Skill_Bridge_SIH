@@ -152,12 +152,10 @@ export const IndustryQuestionManagement: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Filters & Search
   const [statusTab, setStatusTab] = useState<string>("all");
   const [selectedSkillFilter, setSelectedSkillFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState<string>("");
 
-  // Modal States
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState<boolean>(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [bulkStep, setBulkStep] = useState<"input" | "review">("input");
@@ -173,7 +171,6 @@ export const IndustryQuestionManagement: React.FC = () => {
   );
   const [submitting, setSubmitting] = useState<boolean>(false);
 
-  // Form State
   const [formData, setFormData] = useState({
     skill_id: "",
     question: "",
@@ -186,7 +183,6 @@ export const IndustryQuestionManagement: React.FC = () => {
     explanation: "",
   });
 
-  // Skill Request Form State
   const [skillReqData, setSkillReqData] = useState({
     skill_name: "",
     category: "Technical",
@@ -201,7 +197,6 @@ export const IndustryQuestionManagement: React.FC = () => {
     setErrorMsg(null);
 
     try {
-      // 1. Fetch user submitted questions
       const resQ = await fetch(`${API_BASE_URL}/assessment/questions/my`, {
         headers: { Authorization: `Bearer ${authToken}` },
       });
@@ -210,7 +205,6 @@ export const IndustryQuestionManagement: React.FC = () => {
         setQuestions(dataQ.questions || []);
       }
 
-      // 2. Fetch master skills list
       const resS = await fetch(`${API_BASE_URL}/skills`, {
         headers: { Authorization: `Bearer ${authToken}` },
       });
@@ -221,7 +215,6 @@ export const IndustryQuestionManagement: React.FC = () => {
         setSkills(dataS.skills);
       }
 
-      // 3. Fetch industry stats
       const resStats = await fetch(
         `${API_BASE_URL}/assessment/stats/industry`,
         {
@@ -253,13 +246,14 @@ export const IndustryQuestionManagement: React.FC = () => {
     let matchingSkill = skills.find(
       (skill) => normalize(skill.name) === normSkill,
     );
+
     if (!matchingSkill && normSkill) {
       matchingSkill = skills.find((skill) => {
         const sNorm = normalize(skill.name);
         return sNorm.includes(normSkill) || normSkill.includes(sNorm);
       });
     }
-    // If still no skill matched, fallback to active skill filter or first available skill
+
     if (!matchingSkill && skills.length > 0) {
       if (selectedSkillFilter !== "all") {
         matchingSkill = skills.find(
@@ -273,7 +267,7 @@ export const IndustryQuestionManagement: React.FC = () => {
 
     if (!item.question?.trim()) errors.push("Question is required.");
     if (!matchingSkill)
-      errors.push(`Please select a valid skill for this question.`);
+      errors.push("Please select a valid skill for this question.");
     if (!item.option_a?.trim()) errors.push("Option A is required.");
     if (!item.option_b?.trim()) errors.push("Option B is required.");
     if (!item.option_c?.trim()) errors.push("Option C is required.");
@@ -288,7 +282,10 @@ export const IndustryQuestionManagement: React.FC = () => {
     let difficulty = item.difficulty?.trim() || "Medium";
     difficulty =
       difficulty.charAt(0).toUpperCase() + difficulty.slice(1).toLowerCase();
-    if (!["Easy", "Medium", "Hard"].includes(difficulty)) difficulty = "Medium";
+
+    if (!["Easy", "Medium", "Hard"].includes(difficulty)) {
+      difficulty = "Medium";
+    }
 
     const explanation =
       item.explanation && item.explanation.trim().length >= 5
@@ -304,8 +301,10 @@ export const IndustryQuestionManagement: React.FC = () => {
           normalize(item.skill || matchingSkill?.name || "") &&
         normalize(other.question) === normalize(item.question),
     );
-    if (item.question?.trim() && duplicate)
+
+    if (item.question?.trim() && duplicate) {
       errors.push("This is a duplicate question in the current import batch.");
+    }
 
     return {
       ...item,
@@ -324,45 +323,58 @@ export const IndustryQuestionManagement: React.FC = () => {
 
   const parseBulkText = () => {
     setBulkError(null);
-    if (!bulkText.trim())
+
+    if (!bulkText.trim()) {
       return setBulkError(
         "Paste question content or upload a supported text file before parsing.",
       );
-    if (bulkText.length > 50_000)
+    }
+
+    if (bulkText.length > 50_000) {
       return setBulkError(
         `Import limit exceeded. Your input has ${bulkText.length.toLocaleString()} characters; the maximum is 50,000.`,
       );
+    }
 
-    // Split by QUESTION / Q1 / Q / numbered headers
     let rawBlocks = bulkText.split(
       /(?:^|\n)\s*(?:[#*`\->\d.\s]*(?:\bQUESTION|\bQ\d+|\bQ\b)\s*[:.\-]\s*)/im,
     );
+
     if (rawBlocks.length <= 1) {
       rawBlocks = bulkText.split(/(?:^|\n)\s*(?:\d+[\.\)]\s+)/im);
     }
+
     const blocks = rawBlocks.slice(1);
-    if (!blocks.length)
+
+    if (!blocks.length) {
       return setBulkError(
         "No question blocks were found. Make sure questions start with 'QUESTION:' or '1.' format.",
       );
-    if (blocks.length > 100)
+    }
+
+    if (blocks.length > 100) {
       return setBulkError(
         `Import limit exceeded. ${blocks.length} questions were detected; the maximum is 100.`,
       );
+    }
 
     const labelPattern =
       /(?:^|\n)\s*(?:[#*`\->\s]*)(SKILL|TARGET SKILL|OPTION\s*[ABCD]|[ABCD]|CORRECT\s*ANSWER|CORRECT\s*OPTION|CORRECT|ANSWER|ANS|DIFFICULTY\s*LEVEL|DIFFICULTY|EXPLANATION|EXPLAIN|RATIONALE)(?:[#*`\s]*)\s*[:.\)\-]\s*/gim;
+
     const cleanVal = (val: string) =>
       val.replace(/^[\s#*`\->]+|[\s#*`]+$/g, "").trim();
 
     const parsed = blocks.map((block, index) => {
       const matches = [...block.matchAll(labelPattern)];
+
       const fields: Record<string, string> = {
         QUESTION: cleanVal(block.slice(0, matches[0]?.index ?? block.length)),
       };
+
       matches.forEach((match, matchIndex) => {
         const rawKey = match[1].toUpperCase().replace(/\s+/g, " ");
         let key = rawKey;
+
         if (rawKey.includes("SKILL")) key = "SKILL";
         else if (rawKey === "OPTION A" || rawKey === "A") key = "A";
         else if (rawKey === "OPTION B" || rawKey === "B") key = "B";
@@ -372,38 +384,51 @@ export const IndustryQuestionManagement: React.FC = () => {
           rawKey.includes("ANSWER") ||
           rawKey.includes("CORRECT") ||
           rawKey === "ANS"
-        )
+        ) {
           key = "ANSWER";
-        else if (rawKey.includes("DIFFICULTY")) key = "DIFFICULTY";
-        else if (
+        } else if (rawKey.includes("DIFFICULTY")) {
+          key = "DIFFICULTY";
+        } else if (
           rawKey.includes("EXPLANATION") ||
           rawKey.includes("EXPLAIN") ||
           rawKey.includes("RATIONALE")
-        )
+        ) {
           key = "EXPLANATION";
+        }
 
         const start = (match.index ?? 0) + match[0].length;
         const end = matches[matchIndex + 1]?.index ?? block.length;
+
         fields[key] = cleanVal(block.slice(start, end));
       });
 
       let diff = fields.DIFFICULTY || "Medium";
-      if (diff)
+
+      if (diff) {
         diff = diff.charAt(0).toUpperCase() + diff.slice(1).toLowerCase();
-      if (!["Easy", "Medium", "Hard"].includes(diff)) diff = "Medium";
+      }
+
+      if (!["Easy", "Medium", "Hard"].includes(diff)) {
+        diff = "Medium";
+      }
 
       let ans = fields.ANSWER || "";
       const ansMatch = ans.match(/\b([ABCD])\b/i) || ans.match(/([ABCD])/i);
+
       if (ansMatch) {
         ans = ansMatch[1].toUpperCase();
       } else if (ans.trim()) {
         const normAns = normalize(ans);
+
         if (normAns === normalize(fields.A || "")) ans = "A";
         else if (normAns === normalize(fields.B || "")) ans = "B";
         else if (normAns === normalize(fields.C || "")) ans = "C";
         else if (normAns === normalize(fields.D || "")) ans = "D";
       }
-      if (!["A", "B", "C", "D"].includes(ans)) ans = "A";
+
+      if (!["A", "B", "C", "D"].includes(ans)) {
+        ans = "A";
+      }
 
       const defaultSkillName =
         (selectedSkillFilter !== "all"
@@ -426,6 +451,7 @@ export const IndustryQuestionManagement: React.FC = () => {
         explanation: fields.EXPLANATION || "",
       };
     });
+
     setBulkQuestions(parsed.map((item) => validateBulkQuestion(item, parsed)));
     setBulkStep("review");
   };
@@ -441,28 +467,40 @@ export const IndustryQuestionManagement: React.FC = () => {
 
   const downloadTemplate = () => {
     const link = document.createElement("a");
+
     link.href = URL.createObjectURL(
       new Blob([QUESTION_TEMPLATE], { type: "text/plain" }),
     );
+
     link.download = "skillbridge-question-import-template.txt";
     link.click();
+
     URL.revokeObjectURL(link.href);
   };
 
   const handleUpload = async (file?: File) => {
     if (!file) return;
+
     const extension = file.name.split(".").pop()?.toLowerCase();
-    if (!extension || !["txt", "md", "markdown"].includes(extension))
+
+    if (!extension || !["txt", "md", "markdown"].includes(extension)) {
       return setBulkError("Only .txt, .md, and .markdown files are supported.");
-    if (file.size > 55_000)
+    }
+
+    if (file.size > 55_000) {
       return setBulkError(
         "File is too large. Keep imported content within 50,000 characters.",
       );
+    }
+
     const text = await file.text();
-    if (text.length > 50_000)
+
+    if (text.length > 50_000) {
       return setBulkError(
         `Import limit exceeded. Your file contains ${text.length.toLocaleString()} characters; the maximum is 50,000.`,
       );
+    }
+
     setBulkError(null);
     setBulkText(text);
   };
@@ -473,42 +511,56 @@ export const IndustryQuestionManagement: React.FC = () => {
         ? { ...item, errors: undefined }
         : { ...question, errors: undefined },
     );
+
     setBulkQuestions(
       rawItems.map((question) => validateBulkQuestion(question, rawItems)),
     );
+
     setBulkEditId(null);
   };
 
   const submitBulkImport = async () => {
-    if (bulkQuestions.length === 0)
+    if (bulkQuestions.length === 0) {
       return setBulkError("No questions found in this import batch.");
-    if (bulkQuestions.some((question) => question.errors.length))
+    }
+
+    if (bulkQuestions.some((question) => question.errors.length)) {
       return setBulkError(
         "Please fix or remove invalid questions before submitting.",
       );
+    }
+
     if (
       !window.confirm(
         `Ready to submit ${bulkQuestions.length} question${bulkQuestions.length === 1 ? "" : "s"}? They will be submitted for Admin moderation.`,
       )
-    )
+    ) {
       return;
+    }
+
     const authToken = token || localStorage.getItem("skillbridge_token");
-    if (!authToken)
+
+    if (!authToken) {
       return setBulkError(
         "Your authentication session has expired. Please log in again.",
       );
+    }
 
     setBulkSubmitting(true);
     setBulkError(null);
+
     try {
       const payloadQuestions = bulkQuestions.map((q) => {
         let sid = parseInt(q.skill_id, 10);
+
         if (isNaN(sid) || sid <= 0) {
           const match = skills.find(
             (s) => normalize(s.name) === normalize(q.skill),
           );
+
           sid = match ? match.id : skills[0]?.id || 1;
         }
+
         return {
           skill_id: sid,
           question: q.question.trim(),
@@ -542,11 +594,15 @@ export const IndustryQuestionManagement: React.FC = () => {
           body: JSON.stringify({ questions: payloadQuestions }),
         },
       );
+
       const result1 = await res1.json();
-      if (!res1.ok || !result1.success)
+
+      if (!res1.ok || !result1.success) {
         return setBulkError(
           result1.message || "Import failed. No questions were added.",
         );
+      }
+
       setSuccessMsg(result1.message || "Questions imported successfully.");
       setTimeout(() => setSuccessMsg(null), 5000);
       setIsBulkModalOpen(false);
@@ -561,6 +617,7 @@ export const IndustryQuestionManagement: React.FC = () => {
   const handleOpenSubmitModal = (itemToEdit?: QuestionItem) => {
     if (itemToEdit) {
       setEditingQuestion(itemToEdit);
+
       setFormData({
         skill_id: String(itemToEdit.skill_id),
         question: itemToEdit.question,
@@ -574,6 +631,7 @@ export const IndustryQuestionManagement: React.FC = () => {
       });
     } else {
       setEditingQuestion(null);
+
       setFormData({
         skill_id: skills.length > 0 ? String(skills[0].id) : "",
         question: "",
@@ -586,11 +644,13 @@ export const IndustryQuestionManagement: React.FC = () => {
         explanation: "",
       });
     }
+
     setIsSubmitModalOpen(true);
   };
 
   const handleQuestionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     const authToken = token || localStorage.getItem("skillbridge_token");
     if (!authToken) return;
 
@@ -598,6 +658,7 @@ export const IndustryQuestionManagement: React.FC = () => {
       setErrorMsg("Please select a valid skill.");
       return;
     }
+
     if (formData.question.trim().length < 5) {
       setErrorMsg("Question text must be at least 5 characters long.");
       return;
@@ -622,6 +683,7 @@ export const IndustryQuestionManagement: React.FC = () => {
       const url = editingQuestion
         ? `${API_BASE_URL}/assessment/questions/${editingQuestion.id}`
         : `${API_BASE_URL}/assessment/questions`;
+
       const method = editingQuestion ? "PUT" : "POST";
 
       const res = await fetch(url, {
@@ -639,6 +701,7 @@ export const IndustryQuestionManagement: React.FC = () => {
         setSuccessMsg(
           result.message || "Question submitted for Admin moderation.",
         );
+
         setTimeout(() => setSuccessMsg(null), 4000);
         setIsSubmitModalOpen(false);
         fetchQuestionsAndSkills();
@@ -653,8 +716,9 @@ export const IndustryQuestionManagement: React.FC = () => {
   };
 
   const handleDeleteQuestion = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this question?"))
+    if (!window.confirm("Are you sure you want to delete this question?")) {
       return;
+    }
 
     const authToken = token || localStorage.getItem("skillbridge_token");
     if (!authToken) return;
@@ -664,7 +728,9 @@ export const IndustryQuestionManagement: React.FC = () => {
         method: "DELETE",
         headers: { Authorization: `Bearer ${authToken}` },
       });
+
       const result = await res.json();
+
       if (res.ok && result.success) {
         setSuccessMsg("Question deleted successfully.");
         setTimeout(() => setSuccessMsg(null), 3000);
@@ -679,6 +745,7 @@ export const IndustryQuestionManagement: React.FC = () => {
 
   const handleSkillRequestSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     const authToken = token || localStorage.getItem("skillbridge_token");
     if (!authToken) return;
 
@@ -706,7 +773,11 @@ export const IndustryQuestionManagement: React.FC = () => {
         setSuccessMsg(result.message || "Skill request submitted to Admin.");
         setTimeout(() => setSuccessMsg(null), 4000);
         setIsSkillModalOpen(false);
-        setSkillReqData({ skill_name: "", category: "Technical", reason: "" });
+        setSkillReqData({
+          skill_name: "",
+          category: "Technical",
+          reason: "",
+        });
       } else {
         setErrorMsg(result.message || "Failed to request skill.");
       }
@@ -717,33 +788,41 @@ export const IndustryQuestionManagement: React.FC = () => {
     }
   };
 
-  // Filtered List
   const filteredQuestions = questions.filter((q) => {
     const matchesTab = statusTab === "all" || q.status === statusTab;
+
     const matchesSkill =
       selectedSkillFilter === "all" ||
       String(q.skill_id) === selectedSkillFilter;
+
     const qText = q.question.toLowerCase();
     const sName = (q.skill_name || "").toLowerCase();
     const search = searchTerm.toLowerCase();
+
     const matchesSearch =
       !search || qText.includes(search) || sName.includes(search);
+
     return matchesTab && matchesSkill && matchesSearch;
   });
 
   return (
     <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-indigo-900/40 via-purple-900/30 to-slate-900/50 border border-indigo-500/20 backdrop-blur-xl relative overflow-hidden">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
+      <div className="relative overflow-hidden rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] p-6 shadow-[var(--shadow-xl)]">
+        <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-[var(--primary-subtle)] blur-3xl" />
+        <div className="absolute -bottom-24 left-1/3 h-40 w-40 rounded-full bg-[var(--accent-purple-bg)] blur-3xl" />
+
+        <div className="relative z-10 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <div className="flex items-center gap-2 text-indigo-400 font-semibold text-xs uppercase tracking-wider mb-1">
-              <Building2 size={16} /> Industry Assessment Management
+            <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--primary)]">
+              <Building2 size={16} />
+              Industry Assessment Management
             </div>
-            <h2 className="text-2xl font-bold text-white tracking-tight">
+
+            <h2 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
               Shared Assessment Question Bank
             </h2>
-            <p className="text-slate-300 text-sm max-w-2xl mt-1">
+
+            <p className="mt-1 max-w-2xl text-sm text-[var(--text-secondary)]">
               Contribute high-quality, industry-validated questions to
               SkillBridge's shared skill bank. Submitted questions are moderated
               by Administrators before entering randomized student assessments.
@@ -753,22 +832,23 @@ export const IndustryQuestionManagement: React.FC = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsSkillModalOpen(true)}
-              className="px-4 py-2.5 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-600/50 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer"
+              className="flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--primary-border)] bg-[var(--primary-subtle)] px-4 py-2.5 text-xs font-semibold text-[var(--primary)] transition-all hover:bg-[var(--bg-card-hover)]"
             >
-              <Sparkles size={15} className="text-amber-400" />
+              <Sparkles size={15} />
               <span>Request New Skill</span>
             </button>
 
             <button
               onClick={() => handleOpenSubmitModal()}
-              className="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/20 flex items-center gap-2 transition-all cursor-pointer"
+              className="flex cursor-pointer items-center gap-2 rounded-xl bg-[var(--primary-lighter)] px-4 py-2.5 text-xs font-semibold text-[var(--text-on-primary)] shadow-[var(--shadow-md)] transition-all hover:bg-[var(--primary-hover)]"
             >
               <PlusCircle size={16} />
               <span>Add Manually</span>
             </button>
+
             <button
               onClick={openBulkImport}
-              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 border border-indigo-500/40 text-indigo-200 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer"
+              className="flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--primary-border)] bg-[var(--bg-muted)] px-4 py-2.5 text-xs font-semibold text-[var(--primary)] transition-all hover:border-[var(--primary)] hover:bg-[var(--bg-card-hover)]"
             >
               <Upload size={15} />
               <span>Bulk Import</span>
@@ -777,95 +857,92 @@ export const IndustryQuestionManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* Analytics Counter Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-md">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+        <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] p-4 shadow-[var(--shadow-sm)]">
+          <div className="flex items-center justify-between text-xs font-medium text-[var(--text-muted)]">
             <span>Total Contributed</span>
-            <FileQuestion size={16} className="text-indigo-400" />
+            <FileQuestion size={16} className="text-[var(--primary)]" />
           </div>
-          <div className="text-2xl font-bold text-white mt-2">
+          <div className="mt-2 text-2xl font-bold text-[var(--text-primary)]">
             {stats.total_questions}
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-emerald-500/20 backdrop-blur-md">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
+        <div className="rounded-xl border border-[var(--accent-emerald)]/30 bg-[var(--accent-emerald-bg)] p-4 shadow-[var(--shadow-sm)]">
+          <div className="flex items-center justify-between text-xs font-medium text-[var(--text-muted)]">
             <span>Approved & Live</span>
-            <CheckCircle2 size={16} className="text-emerald-400" />
+            <CheckCircle2 size={16} className="text-[var(--accent-emerald)]" />
           </div>
-          <div className="text-2xl font-bold text-emerald-400 mt-2">
+          <div className="mt-2 text-2xl font-bold text-[var(--accent-emerald)]">
             {stats.approved}
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-amber-500/20 backdrop-blur-md">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
+        <div className="rounded-xl border border-[var(--accent-amber)]/30 bg-[var(--accent-amber-bg)] p-4 shadow-[var(--shadow-sm)]">
+          <div className="flex items-center justify-between text-xs font-medium text-[var(--text-muted)]">
             <span>Pending Review</span>
-            <Clock size={16} className="text-amber-400" />
+            <Clock size={16} className="text-[var(--accent-amber)]" />
           </div>
-          <div className="text-2xl font-bold text-amber-400 mt-2">
+          <div className="mt-2 text-2xl font-bold text-[var(--accent-amber)]">
             {stats.pending}
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-rose-500/20 backdrop-blur-md">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
+        <div className="rounded-xl border border-[var(--accent-rose)]/30 bg-[var(--accent-rose-bg)] p-4 shadow-[var(--shadow-sm)]">
+          <div className="flex items-center justify-between text-xs font-medium text-[var(--text-muted)]">
             <span>Rejected</span>
-            <XCircle size={16} className="text-rose-400" />
+            <XCircle size={16} className="text-[var(--accent-rose)]" />
           </div>
-          <div className="text-2xl font-bold text-rose-400 mt-2">
+          <div className="mt-2 text-2xl font-bold text-[var(--accent-rose)]">
             {stats.rejected}
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-purple-500/20 backdrop-blur-md">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
+        <div className="rounded-xl border border-[var(--accent-purple)]/30 bg-[var(--accent-purple-bg)] p-4 shadow-[var(--shadow-sm)]">
+          <div className="flex items-center justify-between text-xs font-medium text-[var(--text-muted)]">
             <span>Student Attempts</span>
-            <Award size={16} className="text-purple-400" />
+            <Award size={16} className="text-[var(--accent-purple)]" />
           </div>
-          <div className="text-2xl font-bold text-purple-300 mt-2">
+          <div className="mt-2 text-2xl font-bold text-[var(--accent-purple)]">
             {stats.total_student_attempts}
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-blue-500/20 backdrop-blur-md">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
+        <div className="rounded-xl border border-[var(--accent-cyan)]/30 bg-[var(--accent-cyan-bg)] p-4 shadow-[var(--shadow-sm)]">
+          <div className="flex items-center justify-between text-xs font-medium text-[var(--text-muted)]">
             <span>Avg Student Accuracy</span>
-            <BarChart3 size={16} className="text-blue-400" />
+            <BarChart3 size={16} className="text-[var(--accent-cyan)]" />
           </div>
-          <div className="text-2xl font-bold text-blue-400 mt-2">
+          <div className="mt-2 text-2xl font-bold text-[var(--accent-cyan)]">
             {stats.avg_student_accuracy}%
           </div>
         </div>
       </div>
 
-      {/* Messages */}
       {successMsg && (
-        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm flex items-center gap-3">
+        <div className="flex items-center gap-3 rounded-xl border border-[var(--accent-emerald)]/30 bg-[var(--accent-emerald-bg)] p-4 text-sm text-[var(--accent-emerald)]">
           <CheckCircle2 size={18} className="shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {errorMsg && (
-        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-center gap-3">
+        <div className="flex items-center gap-3 rounded-xl border border-[var(--accent-rose)]/30 bg-[var(--accent-rose-bg)] p-4 text-sm text-[var(--accent-rose)]">
           <AlertCircle size={18} className="shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
-      {/* Filter and Search Bar */}
-      <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-2 w-full md:w-auto">
+      <div className="flex flex-col items-center justify-between gap-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] p-4 shadow-[var(--shadow-sm)] md:flex-row">
+        <div className="flex w-full items-center gap-2 overflow-x-auto md:w-auto">
           {["all", "pending", "approved", "rejected"].map((tab) => (
             <button
               key={tab}
               onClick={() => setStatusTab(tab)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all cursor-pointer ${
+              className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all ${
                 statusTab === tab
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
-                  : "bg-slate-800/60 text-slate-400 hover:text-slate-200"
+                  ? "bg-[var(--primary-lighter)] text-[var(--text-on-primary)] shadow-[var(--shadow-sm)]"
+                  : "bg-[var(--bg-muted)] text-[var(--text-muted)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
               }`}
             >
               {tab === "all" ? "All Questions" : tab}
@@ -873,36 +950,40 @@ export const IndustryQuestionManagement: React.FC = () => {
           ))}
         </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        <div className="flex w-full items-center gap-3 md:w-auto">
           <div className="relative flex-1 md:w-64">
             <Search
               size={14}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
             />
             <input
               type="text"
               placeholder="Search question text or skill..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 bg-slate-800/70 border border-slate-700/60 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+              className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-input)] py-1.5 pl-9 pr-3 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--primary)] focus:outline-none focus:ring-1 focus:ring-[var(--focus-ring)]"
             />
           </div>
 
-          <div className="flex items-center gap-1 bg-slate-800/70 border border-slate-700/60 rounded-lg px-2 py-1.5 text-xs text-slate-300">
-            <Filter size={12} className="text-slate-400" />
+          <div className="flex items-center gap-1 rounded-lg border border-[var(--border-color)] bg-[var(--bg-input)] px-2 py-1.5 text-xs text-[var(--text-secondary)]">
+            <Filter size={12} className="text-[var(--text-muted)]" />
             <select
               value={selectedSkillFilter}
               onChange={(e) => setSelectedSkillFilter(e.target.value)}
-              className="bg-transparent text-slate-200 focus:outline-none cursor-pointer"
+              className="cursor-pointer bg-transparent text-[var(--text-primary)] focus:outline-none"
             >
-              <option value="all" className="bg-slate-900 text-slate-200">
+              <option
+                value="all"
+                className="bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+              >
                 All Skills
               </option>
+
               {skills.map((s) => (
                 <option
                   key={s.id}
                   value={String(s.id)}
-                  className="bg-slate-900 text-slate-200"
+                  className="bg-[var(--bg-elevated)] text-[var(--text-primary)]"
                 >
                   {s.name}
                 </option>
@@ -912,28 +993,34 @@ export const IndustryQuestionManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* Question Cards List */}
       {loading ? (
-        <div className="p-12 text-center text-slate-400 text-sm bg-slate-900/40 rounded-xl border border-slate-800/60">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-indigo-500 border-t-transparent mb-3" />
+        <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-muted)] p-12 text-center text-sm text-[var(--text-muted)]">
+          <div className="mb-3 inline-block h-8 w-8 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent" />
           <p>Loading assessment questions...</p>
         </div>
       ) : filteredQuestions.length === 0 ? (
-        <div className="p-12 text-center bg-slate-900/40 rounded-xl border border-slate-800/60 text-slate-400 space-y-3">
-          <HelpCircle size={40} className="mx-auto text-slate-600" />
-          <h3 className="text-lg font-semibold text-slate-300">
+        <div className="space-y-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-muted)] p-12 text-center text-[var(--text-muted)]">
+          <HelpCircle
+            size={40}
+            className="mx-auto text-[var(--text-disabled)]"
+          />
+
+          <h3 className="text-lg font-semibold text-[var(--text-primary)]">
             No Questions Found
           </h3>
-          <p className="text-xs max-w-md mx-auto">
+
+          <p className="mx-auto max-w-md text-xs text-[var(--text-secondary)]">
             {searchTerm || statusTab !== "all" || selectedSkillFilter !== "all"
               ? "No assessment questions match your active filters."
               : "You haven't contributed any assessment questions yet. Start building your company's question bank today!"}
           </p>
+
           <button
             onClick={() => handleOpenSubmitModal()}
-            className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg cursor-pointer"
+            className="mt-2 inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[var(--primary-lighter)] px-4 py-2 text-xs font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--primary-hover)]"
           >
-            <PlusCircle size={14} /> Submit Question
+            <PlusCircle size={14} />
+            Submit Question
           </button>
         </div>
       ) : (
@@ -941,38 +1028,39 @@ export const IndustryQuestionManagement: React.FC = () => {
           {filteredQuestions.map((item) => (
             <div
               key={item.id}
-              className={`p-5 rounded-2xl bg-slate-900/70 border backdrop-blur-md transition-all ${
+              className={`rounded-2xl border bg-[var(--bg-card)] p-5 shadow-[var(--shadow-md)] backdrop-blur-md transition-all ${
                 item.status === "approved"
-                  ? "border-emerald-500/30 hover:border-emerald-500/50"
+                  ? "border-[var(--accent-emerald)]/30 hover:border-[var(--accent-emerald)]/50"
                   : item.status === "rejected"
-                    ? "border-rose-500/30 hover:border-rose-500/50"
-                    : "border-amber-500/30 hover:border-amber-500/50"
+                    ? "border-[var(--accent-rose)]/30 hover:border-[var(--accent-rose)]/50"
+                    : "border-[var(--accent-amber)]/30 hover:border-[var(--accent-amber)]/50"
               }`}
             >
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 pb-3 border-b border-slate-800/60">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-xs font-medium">
+              <div className="flex flex-col items-start justify-between gap-3 border-b border-[var(--border-subtle)] pb-3 md:flex-row md:items-center">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-[var(--primary-border)] bg-[var(--primary-subtle)] px-2.5 py-0.5 text-xs font-medium text-[var(--primary)]">
                     {item.skill_name}
                   </span>
+
                   <span
-                    className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                    className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${
                       item.difficulty === "Easy"
-                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                        ? "border-[var(--accent-emerald)]/30 bg-[var(--accent-emerald-bg)] text-[var(--accent-emerald)]"
                         : item.difficulty === "Hard"
-                          ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
-                          : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                          ? "border-[var(--accent-rose)]/30 bg-[var(--accent-rose-bg)] text-[var(--accent-rose)]"
+                          : "border-[var(--accent-amber)]/30 bg-[var(--accent-amber-bg)] text-[var(--accent-amber)]"
                     }`}
                   >
                     {item.difficulty}
                   </span>
 
                   <span
-                    className={`px-2.5 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 border ${
+                    className={`flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
                       item.status === "approved"
-                        ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                        ? "border-[var(--accent-emerald)]/30 bg-[var(--accent-emerald-bg)] text-[var(--accent-emerald)]"
                         : item.status === "rejected"
-                          ? "bg-rose-500/15 text-rose-300 border-rose-500/30"
-                          : "bg-amber-500/15 text-amber-300 border-amber-500/30"
+                          ? "border-[var(--accent-rose)]/30 bg-[var(--accent-rose-bg)] text-[var(--accent-rose)]"
+                          : "border-[var(--accent-amber)]/30 bg-[var(--accent-amber-bg)] text-[var(--accent-amber)]"
                     }`}
                   >
                     {item.status === "approved" && <CheckCircle2 size={12} />}
@@ -987,40 +1075,41 @@ export const IndustryQuestionManagement: React.FC = () => {
                     <>
                       <button
                         onClick={() => handleOpenSubmitModal(item)}
-                        className="p-1.5 text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/10 rounded-lg transition-colors cursor-pointer"
+                        className="cursor-pointer rounded-lg p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--primary-subtle)] hover:text-[var(--primary)]"
                         title="Edit question"
                       >
                         <Edit size={14} />
                       </button>
+
                       <button
                         onClick={() => handleDeleteQuestion(item.id)}
-                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                        className="cursor-pointer rounded-lg p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--accent-rose-bg)] hover:text-[var(--accent-rose)]"
                         title="Delete question"
                       >
                         <Trash2 size={14} />
                       </button>
                     </>
                   )}
+
                   {item.status === "approved" && (
                     <button
                       onClick={() => handleOpenSubmitModal(item)}
-                      className="px-2.5 py-1 text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                      className="flex cursor-pointer items-center gap-1 rounded-lg border border-[var(--accent-amber)]/30 bg-[var(--accent-amber-bg)] px-2.5 py-1 text-xs text-[var(--accent-amber)] transition-colors hover:bg-[var(--accent-amber)]/15"
                       title="Editing an approved question will submit it for Admin re-moderation"
                     >
-                      <Edit size={12} /> Edit (Re-submit)
+                      <Edit size={12} />
+                      Edit (Re-submit)
                     </button>
                   )}
                 </div>
               </div>
 
-              {/* Question Text */}
               <div className="py-3">
-                <p className="text-sm font-semibold text-slate-100 leading-relaxed">
+                <p className="text-sm font-semibold leading-relaxed text-[var(--text-primary)]">
                   {item.question}
                 </p>
 
-                {/* Options grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3">
+                <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
                   {[
                     { key: "A", text: item.option_a },
                     { key: "B", text: item.option_b },
@@ -1029,44 +1118,46 @@ export const IndustryQuestionManagement: React.FC = () => {
                   ].map((opt) => (
                     <div
                       key={opt.key}
-                      className={`p-2.5 rounded-lg text-xs flex items-center gap-2 border ${
+                      className={`flex items-center gap-2 rounded-lg border p-2.5 text-xs ${
                         item.correct_option === opt.key
-                          ? "bg-emerald-950/40 text-emerald-200 border-emerald-500/40 font-medium"
-                          : "bg-slate-800/40 text-slate-300 border-slate-700/40"
+                          ? "border-[var(--accent-emerald)]/40 bg-[var(--accent-emerald-bg)] font-medium text-[var(--accent-emerald)]"
+                          : "border-[var(--border-subtle)] bg-[var(--bg-muted)] text-[var(--text-secondary)]"
                       }`}
                     >
                       <span
-                        className={`w-5 h-5 rounded-full text-center leading-5 text-[10px] font-bold shrink-0 ${
+                        className={`h-5 w-5 shrink-0 rounded-full text-center text-[10px] font-bold leading-5 ${
                           item.correct_option === opt.key
-                            ? "bg-emerald-500 text-slate-950"
-                            : "bg-slate-700 text-slate-300"
+                            ? "bg-[var(--accent-emerald)] text-[var(--text-on-primary)]"
+                            : "bg-[var(--bg-elevated)] text-[var(--text-secondary)]"
                         }`}
                       >
                         {opt.key}
                       </span>
+
                       <span className="truncate">{opt.text}</span>
                     </div>
                   ))}
                 </div>
 
-                {/* Explanation */}
                 {item.explanation && (
-                  <div className="mt-3 p-3 rounded-lg bg-slate-800/40 border border-slate-700/40 text-xs text-slate-300">
-                    <span className="font-semibold text-indigo-300">
+                  <div className="mt-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-muted)] p-3 text-xs text-[var(--text-secondary)]">
+                    <span className="font-semibold text-[var(--primary)]">
                       Explanation:{" "}
                     </span>
                     {item.explanation}
                   </div>
                 )}
 
-                {/* Rejection notice if rejected */}
                 {item.status === "rejected" && item.rejection_reason && (
-                  <div className="mt-3 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-300">
-                    <div className="font-semibold flex items-center gap-1.5 text-rose-400 mb-1">
-                      <AlertCircle size={14} /> Admin Rejection Reason:
+                  <div className="mt-3 rounded-xl border border-[var(--accent-rose)]/30 bg-[var(--accent-rose-bg)] p-3 text-xs text-[var(--accent-rose)]">
+                    <div className="mb-1 flex items-center gap-1.5 font-semibold">
+                      <AlertCircle size={14} />
+                      Admin Rejection Reason:
                     </div>
+
                     <p>{item.rejection_reason}</p>
-                    <p className="mt-2 text-[11px] text-slate-400">
+
+                    <p className="mt-2 text-[11px] text-[var(--text-muted)]">
                       Click "Edit" above to update the question based on
                       feedback and re-submit it for review.
                     </p>
@@ -1078,62 +1169,70 @@ export const IndustryQuestionManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Bulk import stays entirely in local state until final submission. */}
       {isBulkModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-sm overflow-y-auto p-4">
-          <div className="max-w-5xl mx-auto my-4 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-5 md:p-7">
-            <div className="flex items-start justify-between gap-4 mb-6">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-[var(--bg-app)]/80 p-4 backdrop-blur-md">
+          <div className="mx-auto my-4 max-w-5xl rounded-2xl border border-[var(--border-color)] bg-[var(--bg-elevated)] p-5 shadow-[var(--shadow-xl)] md:p-7">
+            <div className="mb-6 flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs uppercase tracking-wider font-semibold text-indigo-300">
+                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--primary)]">
                   Assessment questions
                 </p>
-                <h3 className="text-xl font-bold text-white">
+
+                <h3 className="text-xl font-bold text-[var(--text-primary)]">
                   {bulkStep === "input" ? "Bulk Import" : "Review & Import"}
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">
+
+                <p className="mt-1 text-xs text-[var(--text-muted)]">
                   Questions are not saved until you submit the final import.
                 </p>
               </div>
+
               <button
                 onClick={() => setIsBulkModalOpen(false)}
-                className="p-2 text-slate-400 hover:text-white"
+                className="rounded-lg p-2 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
               >
                 <X size={20} />
               </button>
             </div>
+
             {bulkError && (
-              <div className="mb-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-200 text-sm flex gap-2">
+              <div className="mb-4 flex gap-2 rounded-lg border border-[var(--accent-rose)]/30 bg-[var(--accent-rose-bg)] p-3 text-sm text-[var(--accent-rose)]">
                 <AlertCircle size={17} className="shrink-0" />
                 {bulkError}
               </div>
             )}
+
             {bulkStep === "input" ? (
               <div className="space-y-4">
-                <div className="flex flex-wrap justify-between gap-3 p-4 rounded-xl bg-slate-800/60 border border-slate-700">
+                <div className="flex flex-wrap justify-between gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-muted)] p-4">
                   <div>
-                    <p className="text-sm font-semibold text-slate-100">
+                    <p className="text-sm font-semibold text-[var(--text-primary)]">
                       Paste structured text or upload a text file
                     </p>
-                    <p className="text-xs text-slate-400 mt-1">
+
+                    <p className="mt-1 text-xs text-[var(--text-muted)]">
                       Supported: .txt, .md, .markdown. Maximum 50,000 characters
                       and 100 questions.
                     </p>
                   </div>
+
                   <div className="flex gap-2">
                     <button
                       onClick={downloadTemplate}
-                      className="px-3 py-2 text-xs rounded-lg border border-slate-600 text-slate-200 hover:bg-slate-700 flex items-center gap-1.5"
+                      className="flex items-center gap-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-input)] px-3 py-2 text-xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
                     >
                       <Download size={14} />
                       Download Question Template
                     </button>
+
                     <button
                       onClick={() => uploadInputRef.current?.click()}
-                      className="px-3 py-2 text-xs rounded-lg bg-slate-700 hover:bg-slate-600 text-white flex items-center gap-1.5"
+                      className="flex items-center gap-1.5 rounded-lg border border-[var(--primary-border)] bg-[var(--primary-subtle)] px-3 py-2 text-xs font-medium text-[var(--primary)] transition-colors hover:bg-[var(--bg-card-hover)]"
                     >
                       <Upload size={14} />
                       Upload TXT/MD
                     </button>
+
                     <input
                       ref={uploadInputRef}
                       type="file"
@@ -1146,6 +1245,7 @@ export const IndustryQuestionManagement: React.FC = () => {
                     />
                   </div>
                 </div>
+
                 <textarea
                   value={bulkText}
                   onChange={(event) => {
@@ -1154,29 +1254,31 @@ export const IndustryQuestionManagement: React.FC = () => {
                   }}
                   rows={18}
                   placeholder={QUESTION_TEMPLATE}
-                  className="w-full resize-y p-4 text-sm font-mono bg-slate-950 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500"
+                  className="w-full resize-y rounded-xl border border-[var(--border-color)] bg-[var(--bg-input)] p-4 font-mono text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--primary)] focus:outline-none focus:ring-1 focus:ring-[var(--focus-ring)]"
                 />
-                <div className="flex justify-between text-xs text-slate-400">
+
+                <div className="flex justify-between text-xs text-[var(--text-muted)]">
                   <span>
                     Characters:{" "}
                     <b
                       className={
                         bulkText.length > 50_000
-                          ? "text-rose-400"
-                          : "text-slate-200"
+                          ? "text-[var(--accent-rose)]"
+                          : "text-[var(--text-primary)]"
                       }
                     >
                       {bulkText.length.toLocaleString()} / 50,000
                     </b>
                   </span>
+
                   <span>
                     Questions detected:{" "}
                     <b
                       className={
                         (bulkText.match(/^\s*QUESTION\s*:/gim) || []).length >
                         100
-                          ? "text-rose-400"
-                          : "text-slate-200"
+                          ? "text-[var(--accent-rose)]"
+                          : "text-[var(--text-primary)]"
                       }
                     >
                       {(bulkText.match(/^\s*QUESTION\s*:/gim) || []).length} /
@@ -1184,10 +1286,11 @@ export const IndustryQuestionManagement: React.FC = () => {
                     </b>
                   </span>
                 </div>
+
                 <div className="flex justify-end">
                   <button
                     onClick={parseBulkText}
-                    className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm flex items-center gap-2"
+                    className="flex items-center gap-2 rounded-xl bg-[var(--primary)] px-5 py-2.5 text-sm font-semibold text-[var(--text-on-primary)] transition-colors hover:bg-[var(--primary-hover)]"
                   >
                     <FileText size={16} />
                     Parse Questions
@@ -1200,6 +1303,7 @@ export const IndustryQuestionManagement: React.FC = () => {
                   const valid = bulkQuestions.filter(
                     (q) => !q.errors.length,
                   ).length;
+
                   const summary = bulkQuestions.reduce<Record<string, number>>(
                     (acc, q) => {
                       const name = q.skill.trim() || "Unspecified skill";
@@ -1208,39 +1312,43 @@ export const IndustryQuestionManagement: React.FC = () => {
                     },
                     {},
                   );
+
                   return (
-                    <div className="p-4 rounded-xl bg-slate-800/60 border border-slate-700">
+                    <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-muted)] p-4">
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                          <h4 className="font-bold text-white">
+                          <h4 className="font-bold text-[var(--text-primary)]">
                             Import Summary
                           </h4>
-                          <p className="text-sm text-slate-300 mt-1">
+
+                          <p className="mt-1 text-sm text-[var(--text-secondary)]">
                             Total Questions: {bulkQuestions.length} ·{" "}
-                            <span className="text-emerald-400">
+                            <span className="text-[var(--accent-emerald)]">
                               ✓ Valid: {valid}
                             </span>{" "}
                             ·{" "}
-                            <span className="text-amber-400">
+                            <span className="text-[var(--accent-amber)]">
                               ⚠ Needs Correction: {bulkQuestions.length - valid}
                             </span>
                           </p>
                         </div>
+
                         <button
                           onClick={() => setBulkStep("input")}
-                          className="text-xs text-indigo-300 hover:text-white flex items-center gap-1"
+                          className="flex items-center gap-1 text-xs text-[var(--primary)] transition-colors hover:text-[var(--primary-hover)]"
                         >
                           <ArrowLeft size={14} />
                           Back to input
                         </button>
                       </div>
-                      <div className="flex flex-wrap gap-2 mt-3">
+
+                      <div className="mt-3 flex flex-wrap gap-2">
                         {Object.entries(summary)
                           .sort((a, b) => b[1] - a[1])
                           .map(([skill, count]) => (
                             <span
                               key={skill}
-                              className="px-2 py-1 rounded bg-slate-700 text-xs text-slate-200"
+                              className="rounded border border-[var(--border-subtle)] bg-[var(--bg-card-hover)] px-2 py-1 text-xs text-[var(--text-secondary)]"
                             >
                               {skill}: {count}
                             </span>
@@ -1249,53 +1357,63 @@ export const IndustryQuestionManagement: React.FC = () => {
                     </div>
                   );
                 })()}
+
                 {bulkQuestions.map((item, index) => (
                   <div
                     key={item.clientId}
-                    className={`p-4 rounded-xl border ${item.errors.length ? "border-amber-500/50 bg-amber-950/10" : "border-emerald-500/25 bg-slate-800/40"}`}
+                    className={`rounded-xl border p-4 ${
+                      item.errors.length
+                        ? "border-[var(--accent-amber)]/50 bg-[var(--accent-amber-bg)]"
+                        : "border-[var(--accent-emerald)]/25 bg-[var(--bg-muted)]"
+                    }`}
                   >
                     <div className="flex justify-between gap-4">
                       <div className="min-w-0">
-                        <p className="text-xs text-slate-400">
+                        <p className="text-xs text-[var(--text-muted)]">
                           Question #{index + 1} ·{" "}
-                          <span className="text-indigo-300">
+                          <span className="text-[var(--primary)]">
                             {item.skill || "No skill"}
                           </span>{" "}
                           · {item.difficulty || "No difficulty"}
                         </p>
-                        <p className="font-semibold text-slate-100 mt-1 whitespace-pre-wrap">
+
+                        <p className="mt-1 whitespace-pre-wrap font-semibold text-[var(--text-primary)]">
                           {item.question || "Missing question"}
                         </p>
                       </div>
+
                       <div className="flex shrink-0 gap-2">
                         <button
                           onClick={() => setBulkEditId(item.clientId)}
-                          className="text-xs text-indigo-300 hover:text-white"
+                          className="text-xs text-[var(--primary)] transition-colors hover:text-[var(--primary-hover)]"
                         >
-                          <Edit size={14} className="inline mr-1" />
+                          <Edit size={14} className="mr-1 inline" />
                           Edit
                         </button>
+
                         <button
                           onClick={() => {
                             if (
                               window.confirm(
                                 `Remove Question #${index + 1} from this import batch?`,
                               )
-                            )
+                            ) {
                               setBulkQuestions((current) =>
                                 current.filter(
                                   (q) => q.clientId !== item.clientId,
                                 ),
                               );
+                            }
                           }}
-                          className="text-xs text-rose-300 hover:text-white"
+                          className="text-xs text-[var(--accent-rose)] transition-colors hover:text-[var(--accent-rose)]"
                         >
-                          <Trash2 size={14} className="inline mr-1" />
+                          <Trash2 size={14} className="mr-1 inline" />
                           Delete
                         </button>
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-300 mt-3">
+
+                    <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-[var(--text-secondary)] md:grid-cols-2">
                       {[
                         ["A", item.option_a],
                         ["B", item.option_b],
@@ -1306,7 +1424,7 @@ export const IndustryQuestionManagement: React.FC = () => {
                           key={letter}
                           className={
                             item.correct_option === letter
-                              ? "text-emerald-300"
+                              ? "text-[var(--accent-emerald)]"
                               : ""
                           }
                         >
@@ -1314,30 +1432,38 @@ export const IndustryQuestionManagement: React.FC = () => {
                         </p>
                       ))}
                     </div>
-                    <p className="text-xs text-slate-400 mt-3">
-                      <b className="text-slate-300">Answer:</b>{" "}
+
+                    <p className="mt-3 text-xs text-[var(--text-muted)]">
+                      <b className="text-[var(--text-secondary)]">Answer:</b>{" "}
                       {item.correct_option || "—"} ·{" "}
-                      <b className="text-slate-300">Explanation:</b>{" "}
+                      <b className="text-[var(--text-secondary)]">
+                        Explanation:
+                      </b>{" "}
                       {item.explanation || "—"}
                     </p>
+
                     {item.errors.length ? (
-                      <ul className="mt-3 text-xs text-amber-200 list-disc list-inside">
+                      <ul className="mt-3 list-inside list-disc text-xs text-[var(--accent-amber)]">
                         {item.errors.map((error) => (
                           <li key={error}>{error}</li>
                         ))}
                       </ul>
                     ) : (
-                      <p className="mt-3 text-xs text-emerald-300">✓ Valid</p>
+                      <p className="mt-3 text-xs text-[var(--accent-emerald)]">
+                        ✓ Valid
+                      </p>
                     )}
                   </div>
                 ))}
-                <div className="flex justify-end gap-3 border-t border-slate-700 pt-4">
+
+                <div className="flex justify-end gap-3 border-t border-[var(--border-subtle)] pt-4">
                   <button
                     onClick={() => setIsBulkModalOpen(false)}
-                    className="px-4 py-2 text-sm text-slate-300"
+                    className="px-4 py-2 text-sm text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
                   >
                     Cancel
                   </button>
+
                   <button
                     disabled={
                       bulkSubmitting ||
@@ -1345,7 +1471,7 @@ export const IndustryQuestionManagement: React.FC = () => {
                       bulkQuestions.some((q) => q.errors.length)
                     }
                     onClick={submitBulkImport}
-                    className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-semibold text-sm"
+                    className="rounded-xl bg-[var(--primary)] px-5 py-2 text-sm font-semibold text-[var(--text-on-primary)] transition-colors hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:bg-[var(--bg-muted)] disabled:text-[var(--text-disabled)]"
                   >
                     {bulkSubmitting
                       ? "Importing..."
@@ -1355,10 +1481,13 @@ export const IndustryQuestionManagement: React.FC = () => {
               </div>
             )}
           </div>
+
           {bulkEditId &&
             (() => {
               const item = bulkQuestions.find((q) => q.clientId === bulkEditId);
+
               if (!item) return null;
+
               return (
                 <BulkEditModal
                   item={item}
@@ -1371,49 +1500,61 @@ export const IndustryQuestionManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Submit / Edit Question Modal */}
       {isSubmitModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-          <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 relative max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[var(--bg-app)]/80 p-4 backdrop-blur-md">
+          <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-[var(--border-color)] bg-[var(--bg-elevated)] p-6 shadow-[var(--shadow-xl)]">
             <button
               onClick={() => setIsSubmitModalOpen(false)}
-              className="absolute right-4 top-4 text-slate-400 hover:text-white p-1 rounded-lg"
+              className="absolute right-4 top-4 rounded-lg p-1 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
             >
               <X size={20} />
             </button>
 
-            <div className="flex items-center gap-2 text-indigo-400 text-xs font-semibold uppercase tracking-wider mb-1">
+            <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--primary)]">
               <FileQuestion size={16} />
               {editingQuestion
                 ? "Edit Assessment Question"
                 : "Submit Assessment Question"}
             </div>
-            <h3 className="text-xl font-bold text-white mb-4">
+
+            <h3 className="mb-4 text-xl font-bold text-[var(--text-primary)]">
               {editingQuestion
                 ? "Update Question Details"
                 : "Add Question to Skill Bank"}
             </h3>
 
             <form onSubmit={handleQuestionSubmit} className="space-y-4 text-xs">
-              {/* Skill & Difficulty Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1">
+                  <label className="mb-1 block font-medium text-[var(--text-secondary)]">
                     Target Skill *
                   </label>
+
                   <select
                     value={formData.skill_id}
                     onChange={(e) =>
-                      setFormData({ ...formData, skill_id: e.target.value })
+                      setFormData({
+                        ...formData,
+                        skill_id: e.target.value,
+                      })
                     }
-                    className="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:border-indigo-500 focus:outline-none"
+                    className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-input)] p-2.5 text-[var(--text-primary)] focus:border-[var(--primary)] focus:outline-none focus:ring-1 focus:ring-[var(--focus-ring)]"
                     required
                   >
-                    <option value="" disabled>
+                    <option
+                      value=""
+                      disabled
+                      className="bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                    >
                       Select target skill
                     </option>
+
                     {skills.map((s) => (
-                      <option key={s.id} value={String(s.id)}>
+                      <option
+                        key={s.id}
+                        value={String(s.id)}
+                        className="bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                      >
                         {s.name} ({s.category || "Technical"})
                       </option>
                     ))}
@@ -1421,9 +1562,10 @@ export const IndustryQuestionManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1">
+                  <label className="mb-1 block font-medium text-[var(--text-secondary)]">
                     Difficulty Level *
                   </label>
+
                   <select
                     value={formData.difficulty}
                     onChange={(e) =>
@@ -1432,37 +1574,55 @@ export const IndustryQuestionManagement: React.FC = () => {
                         difficulty: e.target.value as any,
                       })
                     }
-                    className="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:border-indigo-500 focus:outline-none"
+                    className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-input)] p-2.5 text-[var(--text-primary)] focus:border-[var(--primary)] focus:outline-none focus:ring-1 focus:ring-[var(--focus-ring)]"
                   >
-                    <option value="Easy">Easy</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Hard">Hard</option>
+                    <option
+                      value="Easy"
+                      className="bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                    >
+                      Easy
+                    </option>
+                    <option
+                      value="Medium"
+                      className="bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                    >
+                      Medium
+                    </option>
+                    <option
+                      value="Hard"
+                      className="bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                    >
+                      Hard
+                    </option>
                   </select>
                 </div>
               </div>
 
-              {/* Question Text */}
               <div>
-                <label className="block text-slate-300 font-medium mb-1">
+                <label className="mb-1 block font-medium text-[var(--text-secondary)]">
                   Question Text *
                 </label>
+
                 <textarea
                   rows={3}
                   value={formData.question}
                   onChange={(e) =>
-                    setFormData({ ...formData, question: e.target.value })
+                    setFormData({
+                      ...formData,
+                      question: e.target.value,
+                    })
                   }
                   placeholder="Enter clear, concise question prompt..."
-                  className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-input)] p-3 text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--primary)] focus:outline-none focus:ring-1 focus:ring-[var(--focus-ring)]"
                   required
                 />
               </div>
 
-              {/* Options grid */}
               <div className="space-y-3">
-                <label className="block text-slate-300 font-medium">
+                <label className="block font-medium text-[var(--text-secondary)]">
                   Multiple Choice Options *
                 </label>
+
                 {[
                   { key: "A", keyName: "option_a", val: formData.option_a },
                   { key: "B", keyName: "option_b", val: formData.option_b },
@@ -1478,15 +1638,16 @@ export const IndustryQuestionManagement: React.FC = () => {
                           correct_option: opt.key as any,
                         })
                       }
-                      className={`w-7 h-7 rounded-lg text-xs font-bold shrink-0 transition-colors cursor-pointer ${
+                      className={`h-7 w-7 shrink-0 cursor-pointer rounded-lg text-xs font-bold transition-colors ${
                         formData.correct_option === opt.key
-                          ? "bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20"
-                          : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                          ? "bg-[var(--accent-emerald)] text-[var(--text-on-primary)] shadow-[var(--shadow-sm)]"
+                          : "bg-[var(--bg-muted)] text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
                       }`}
                       title={`Mark Option ${opt.key} as correct answer`}
                     >
                       {opt.key}
                     </button>
+
                     <input
                       type="text"
                       placeholder={`Option ${opt.key} text...`}
@@ -1497,56 +1658,61 @@ export const IndustryQuestionManagement: React.FC = () => {
                           [opt.keyName]: e.target.value,
                         })
                       }
-                      className={`flex-1 p-2.5 bg-slate-800 border rounded-xl text-slate-200 focus:outline-none ${
+                      className={`flex-1 rounded-xl border bg-[var(--bg-input)] p-2.5 text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none ${
                         formData.correct_option === opt.key
-                          ? "border-emerald-500/60"
-                          : "border-slate-700 focus:border-indigo-500"
+                          ? "border-[var(--accent-emerald)]/60 focus:border-[var(--accent-emerald)]"
+                          : "border-[var(--border-color)] focus:border-[var(--primary)]"
                       }`}
                       required
                     />
                   </div>
                 ))}
-                <p className="text-[11px] text-slate-400">
+
+                <p className="text-[11px] text-[var(--text-muted)]">
                   Click on letter badge (A, B, C, or D) to select the correct
                   answer. Selected:{" "}
-                  <strong className="text-emerald-400">
+                  <strong className="text-[var(--accent-emerald)]">
                     Option {formData.correct_option}
                   </strong>
                 </p>
               </div>
 
-              {/* Explanation */}
               <div>
-                <label className="block text-slate-300 font-medium mb-1">
+                <label className="mb-1 block font-medium text-[var(--text-secondary)]">
                   Answer Explanation *
                 </label>
+
                 <textarea
                   rows={2}
                   value={formData.explanation}
                   onChange={(e) =>
-                    setFormData({ ...formData, explanation: e.target.value })
+                    setFormData({
+                      ...formData,
+                      explanation: e.target.value,
+                    })
                   }
                   placeholder="Provide detailed explanation to guide students after submission..."
-                  className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-input)] p-3 text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--primary)] focus:outline-none focus:ring-1 focus:ring-[var(--focus-ring)]"
                   required
                 />
               </div>
 
-              {/* Submit Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-3 border-t border-[var(--border-subtle)] pt-4">
                 <button
                   type="button"
                   onClick={() => setIsSubmitModalOpen(false)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-semibold cursor-pointer"
+                  className="cursor-pointer rounded-xl bg-[var(--bg-muted)] px-4 py-2 font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
                 >
                   Cancel
                 </button>
+
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="flex cursor-pointer items-center gap-2 rounded-xl bg-[var(--primary)] px-5 py-2 font-semibold text-[var(--text-on-primary)] transition-colors hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:bg-[var(--bg-muted)] disabled:text-[var(--text-disabled)]"
                 >
                   <Send size={14} />
+
                   <span>
                     {submitting
                       ? "Saving..."
@@ -1561,21 +1727,22 @@ export const IndustryQuestionManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Skill Request Modal */}
       {isSkillModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-app)]/80 p-4 backdrop-blur-md">
+          <div className="relative w-full max-w-md rounded-2xl border border-[var(--border-color)] bg-[var(--bg-elevated)] p-6 shadow-[var(--shadow-xl)]">
             <button
               onClick={() => setIsSkillModalOpen(false)}
-              className="absolute right-4 top-4 text-slate-400 hover:text-white p-1 rounded-lg"
+              className="absolute right-4 top-4 rounded-lg p-1 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
             >
               <X size={18} />
             </button>
 
-            <div className="flex items-center gap-2 text-amber-400 text-xs font-semibold uppercase tracking-wider mb-1">
-              <Sparkles size={16} /> Skill Request
+            <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--accent-amber)]">
+              <Sparkles size={16} />
+              Skill Request
             </div>
-            <h3 className="text-lg font-bold text-white mb-3">
+
+            <h3 className="mb-3 text-lg font-bold text-[var(--text-primary)]">
               Request New Skill
             </h3>
 
@@ -1584,9 +1751,10 @@ export const IndustryQuestionManagement: React.FC = () => {
               className="space-y-4 text-xs"
             >
               <div>
-                <label className="block text-slate-300 font-medium mb-1">
+                <label className="mb-1 block font-medium text-[var(--text-secondary)]">
                   Skill Name *
                 </label>
+
                 <input
                   type="text"
                   placeholder="e.g. Next.js, Rust, Kubernetes..."
@@ -1597,15 +1765,16 @@ export const IndustryQuestionManagement: React.FC = () => {
                       skill_name: e.target.value,
                     })
                   }
-                  className="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:border-amber-500 focus:outline-none"
+                  className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-input)] p-2.5 text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--accent-amber)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-amber)]/30"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-medium mb-1">
+                <label className="mb-1 block font-medium text-[var(--text-secondary)]">
                   Skill Category
                 </label>
+
                 <input
                   type="text"
                   placeholder="Technical / Soft Skills / Domain"
@@ -1616,37 +1785,42 @@ export const IndustryQuestionManagement: React.FC = () => {
                       category: e.target.value,
                     })
                   }
-                  className="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:border-amber-500 focus:outline-none"
+                  className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-input)] p-2.5 text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--accent-amber)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-amber)]/30"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-medium mb-1">
+                <label className="mb-1 block font-medium text-[var(--text-secondary)]">
                   Reason / Notes
                 </label>
+
                 <textarea
                   rows={2}
                   placeholder="Why is this skill needed for industry assessment?"
                   value={skillReqData.reason}
                   onChange={(e) =>
-                    setSkillReqData({ ...skillReqData, reason: e.target.value })
+                    setSkillReqData({
+                      ...skillReqData,
+                      reason: e.target.value,
+                    })
                   }
-                  className="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:border-amber-500 focus:outline-none"
+                  className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-input)] p-2.5 text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--accent-amber)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-amber)]/30"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-3 border-t border-[var(--border-subtle)] pt-3">
                 <button
                   type="button"
                   onClick={() => setIsSkillModalOpen(false)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl font-semibold cursor-pointer"
+                  className="cursor-pointer rounded-xl bg-[var(--bg-muted)] px-4 py-2 font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
                 >
                   Cancel
                 </button>
+
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="flex cursor-pointer items-center gap-2 rounded-xl bg-[var(--accent-amber)] px-4 py-2 font-semibold text-[var(--text-on-primary)] transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:bg-[var(--bg-muted)] disabled:text-[var(--text-disabled)]"
                 >
                   <Send size={14} />
                   <span>{submitting ? "Submitting..." : "Submit Request"}</span>
@@ -1667,67 +1841,103 @@ const BulkEditModal: React.FC<{
   onSave: (item: BulkQuestion) => void;
 }> = ({ item, skills, onCancel, onSave }) => {
   const [draft, setDraft] = useState(item);
+
   const update = (key: keyof BulkQuestion, value: string) =>
     setDraft((current) => ({ ...current, [key]: value }));
+
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/80">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[var(--bg-app)]/80 p-4 backdrop-blur-md">
       <form
         onSubmit={(event) => {
           event.preventDefault();
           onSave(draft);
         }}
-        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5 rounded-2xl bg-slate-900 border border-slate-700 space-y-3"
+        className="max-h-[90vh] w-full max-w-2xl space-y-3 overflow-y-auto rounded-2xl border border-[var(--border-color)] bg-[var(--bg-elevated)] p-5 shadow-[var(--shadow-xl)]"
       >
         <div className="flex justify-between">
-          <h4 className="font-bold text-white">Edit Imported Question</h4>
+          <h4 className="font-bold text-[var(--text-primary)]">
+            Edit Imported Question
+          </h4>
+
           <button
             type="button"
             onClick={onCancel}
-            className="text-slate-400 hover:text-white"
+            className="rounded-lg p-1 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
           >
             <X size={18} />
           </button>
         </div>
-        <label className="block text-xs text-slate-300">
+
+        <label className="block text-xs text-[var(--text-secondary)]">
           Target Skill
           <select
             value={draft.skill}
             onChange={(event) => update("skill", event.target.value)}
-            className="mt-1 w-full p-2 bg-slate-800 border border-slate-700 rounded text-slate-100"
+            className="mt-1 w-full rounded border border-[var(--border-color)] bg-[var(--bg-input)] p-2 text-[var(--text-primary)] focus:border-[var(--primary)] focus:outline-none"
           >
-            <option value="">Select a skill</option>
+            <option
+              value=""
+              className="bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+            >
+              Select a skill
+            </option>
+
             {skills.map((skill) => (
-              <option key={skill.id} value={skill.name}>
+              <option
+                key={skill.id}
+                value={skill.name}
+                className="bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+              >
                 {skill.name}
               </option>
             ))}
           </select>
         </label>
-        <label className="block text-xs text-slate-300">
+
+        <label className="block text-xs text-[var(--text-secondary)]">
           Difficulty
           <select
             value={draft.difficulty}
             onChange={(event) => update("difficulty", event.target.value)}
-            className="mt-1 w-full p-2 bg-slate-800 border border-slate-700 rounded text-slate-100"
+            className="mt-1 w-full rounded border border-[var(--border-color)] bg-[var(--bg-input)] p-2 text-[var(--text-primary)] focus:border-[var(--primary)] focus:outline-none"
           >
-            <option value="">Select difficulty</option>
-            <option>Easy</option>
-            <option>Medium</option>
-            <option>Hard</option>
+            <option
+              value=""
+              className="bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+            >
+              Select difficulty
+            </option>
+
+            <option className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
+              Easy
+            </option>
+
+            <option className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
+              Medium
+            </option>
+
+            <option className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
+              Hard
+            </option>
           </select>
         </label>
-        <label className="block text-xs text-slate-300">
+
+        <label className="block text-xs text-[var(--text-secondary)]">
           Question
           <textarea
             required
             value={draft.question}
             onChange={(event) => update("question", event.target.value)}
             rows={3}
-            className="mt-1 w-full p-2 bg-slate-800 border border-slate-700 rounded text-slate-100"
+            className="mt-1 w-full rounded border border-[var(--border-color)] bg-[var(--bg-input)] p-2 text-[var(--text-primary)] focus:border-[var(--primary)] focus:outline-none"
           />
         </label>
+
         {(["a", "b", "c", "d"] as const).map((letter) => (
-          <label key={letter} className="block text-xs text-slate-300">
+          <label
+            key={letter}
+            className="block text-xs text-[var(--text-secondary)]"
+          >
             Option {letter.toUpperCase()}
             <input
               required
@@ -1735,44 +1945,59 @@ const BulkEditModal: React.FC<{
               onChange={(event) =>
                 update(`option_${letter}`, event.target.value)
               }
-              className="mt-1 w-full p-2 bg-slate-800 border border-slate-700 rounded text-slate-100"
+              className="mt-1 w-full rounded border border-[var(--border-color)] bg-[var(--bg-input)] p-2 text-[var(--text-primary)] focus:border-[var(--primary)] focus:outline-none"
             />
           </label>
         ))}
-        <label className="block text-xs text-slate-300">
+
+        <label className="block text-xs text-[var(--text-secondary)]">
           Correct Answer
           <select
             value={draft.correct_option}
             onChange={(event) => update("correct_option", event.target.value)}
-            className="mt-1 w-full p-2 bg-slate-800 border border-slate-700 rounded text-slate-100"
+            className="mt-1 w-full rounded border border-[var(--border-color)] bg-[var(--bg-input)] p-2 text-[var(--text-primary)] focus:border-[var(--primary)] focus:outline-none"
           >
-            <option value="">Select answer</option>
+            <option
+              value=""
+              className="bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+            >
+              Select answer
+            </option>
+
             {["A", "B", "C", "D"].map((letter) => (
-              <option key={letter}>{letter}</option>
+              <option
+                key={letter}
+                className="bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+              >
+                {letter}
+              </option>
             ))}
           </select>
         </label>
-        <label className="block text-xs text-slate-300">
+
+        <label className="block text-xs text-[var(--text-secondary)]">
           Explanation
           <textarea
             required
             value={draft.explanation}
             onChange={(event) => update("explanation", event.target.value)}
             rows={3}
-            className="mt-1 w-full p-2 bg-slate-800 border border-slate-700 rounded text-slate-100"
+            className="mt-1 w-full rounded border border-[var(--border-color)] bg-[var(--bg-input)] p-2 text-[var(--text-primary)] focus:border-[var(--primary)] focus:outline-none"
           />
         </label>
-        <div className="flex justify-end gap-3 pt-2">
+
+        <div className="flex justify-end gap-3 border-t border-[var(--border-subtle)] pt-2">
           <button
             type="button"
             onClick={onCancel}
-            className="px-3 py-2 text-sm text-slate-300"
+            className="px-3 py-2 text-sm text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
           >
             Cancel
           </button>
+
           <button
             type="submit"
-            className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold"
+            className="rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-[var(--text-on-primary)] transition-colors hover:bg-[var(--primary-hover)]"
           >
             Save & Revalidate
           </button>

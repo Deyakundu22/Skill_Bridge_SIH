@@ -6,7 +6,6 @@ import {
   User as UserIcon,
   Eye,
   EyeOff,
-  Sparkles,
   ArrowRight,
   GraduationCap,
   Building2,
@@ -246,10 +245,6 @@ const Auth: React.FC = () => {
           </div>
 
           <div className="glass-hero-card">
-            <div className="glowing-badge">
-              <Sparkles size={14} className="sparkle-icon" /> AI-Powered
-              Matching
-            </div>
             <h1 className="hero-heading">
               Decode Your <span className="text-gradient">Career</span>
             </h1>

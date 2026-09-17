@@ -1,5 +1,7 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
+
 import MainLayout from "../components/layout/MainLayout";
+
 import { ArrowLeft, Clock, Rocket, ShieldCheck, Cpu } from "lucide-react";
 
 const ComingSoonPage = () => {
@@ -10,202 +12,76 @@ const ComingSoonPage = () => {
 
   return (
     <MainLayout>
-      <div className="coming-soon-wrapper" style={{ padding: "2rem 1rem", maxWidth: "800px", margin: "0 auto" }}>
+      <div className="max-w-3xl mx-auto px-4 py-8">
         <button
           onClick={() => navigate(-1)}
-          className="back-btn"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            padding: "0.5rem 1rem",
-            borderRadius: "0.5rem",
-            border: "1px solid var(--border-color, rgba(255, 255, 255, 0.1))",
-            background: "var(--card-bg, rgba(255, 255, 255, 0.05))",
-            color: "var(--text-color, #f1f5f9)",
-            cursor: "pointer",
-            marginBottom: "2rem",
-            fontSize: "0.9rem",
-            transition: "all 0.2s ease",
-          }}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)] transition-all duration-200 mb-8 text-sm font-medium shadow-[var(--shadow-sm)]"
         >
           <ArrowLeft size={16} />
           Go Back
         </button>
 
-        <div
-          className="coming-soon-card"
-          style={{
-            background: "var(--card-bg, #1e293b)",
-            border: "1px solid var(--border-color, #334155)",
-            borderRadius: "1rem",
-            padding: "3rem 2rem",
-            textAlign: "center",
-            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3)",
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          {/* Subtle Ambient Glow */}
-          <div
-            style={{
-              position: "absolute",
-              top: "-50px",
-              left: "50%",
-              transform: "translateX(-50%)",
-              width: "250px",
-              height: "250px",
-              background: "radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, rgba(0,0,0,0) 70%)",
-              pointerEvents: "none",
-            }}
-          />
+        <div className="relative overflow-hidden bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-8 sm:p-12 text-center shadow-[var(--shadow-xl)]">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-[var(--primary-subtle)] rounded-full blur-3xl pointer-events-none" />
 
-          {/* Badge */}
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.4rem",
-              padding: "0.35rem 0.85rem",
-              borderRadius: "9999px",
-              background: "rgba(99, 102, 241, 0.15)",
-              color: "#818cf8",
-              border: "1px solid rgba(99, 102, 241, 0.3)",
-              fontSize: "0.8rem",
-              fontWeight: 600,
-              marginBottom: "1.5rem",
-            }}
-          >
-            <Clock size={14} />
-            <span>IN ACTIVE DEVELOPMENT</span>
-          </div>
-
-          {/* Icon */}
-          <div
-            style={{
-              width: "4rem",
-              height: "4rem",
-              margin: "0 auto 1.5rem",
-              borderRadius: "1rem",
-              background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#ffffff",
-              boxShadow: "0 10px 15px -3px rgba(99, 102, 241, 0.4)",
-            }}
-          >
-            <Rocket size={32} />
-          </div>
-
-          {/* Main Title */}
-          <h1
-            style={{
-              fontSize: "2rem",
-              fontWeight: 700,
-              color: "var(--text-color, #f8fafc)",
-              marginBottom: "0.75rem",
-              letterSpacing: "-0.02em",
-            }}
-          >
-            {featureName} is Coming Soon
-          </h1>
-
-          <p
-            style={{
-              fontSize: "1rem",
-              color: "var(--text-secondary, #94a3b8)",
-              maxWidth: "500px",
-              margin: "0 auto 2rem",
-              lineHeight: 1.6,
-            }}
-          >
-            We are engineering this feature with real-time industry analytics and high-performance algorithms for the SkillBridge platform.
-          </p>
-
-          {/* Highlights */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: "1rem",
-              textAlign: "left",
-              marginBottom: "2.5rem",
-              paddingTop: "1rem",
-              borderTop: "1px solid var(--border-color, rgba(255, 255, 255, 0.1))",
-            }}
-          >
-            <div
-              style={{
-                background: "rgba(255, 255, 255, 0.03)",
-                padding: "1rem",
-                borderRadius: "0.75rem",
-                border: "1px solid rgba(255, 255, 255, 0.05)",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#818cf8", marginBottom: "0.3rem", fontWeight: 600 }}>
-                <Cpu size={16} />
-                Real-Time Data Integration
-              </div>
-              <p style={{ fontSize: "0.85rem", color: "var(--text-secondary, #94a3b8)", margin: 0 }}>
-                Powered by our active MySQL opportunity aggregation engine.
-              </p>
+          <div className="relative">
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[var(--primary-subtle)] text-[var(--primary)] border border-[var(--primary-border)] text-xs font-semibold mb-6">
+              <Clock size={14} />
+              <span>IN ACTIVE DEVELOPMENT</span>
             </div>
 
-            <div
-              style={{
-                background: "rgba(255, 255, 255, 0.03)",
-                padding: "1rem",
-                borderRadius: "0.75rem",
-                border: "1px solid rgba(255, 255, 255, 0.05)",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#34d399", marginBottom: "0.3rem", fontWeight: 600 }}>
-                <ShieldCheck size={16} />
-                Verified Industry Quality
-              </div>
-              <p style={{ fontSize: "0.85rem", color: "var(--text-secondary, #94a3b8)", margin: 0 }}>
-                Ensuring smooth collaboration between students and academia.
-              </p>
+            <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-[var(--primary-lighter)] flex items-center justify-center text-[var(--text-on-primary)] shadow-[var(--shadow-lg)]">
+              <Rocket size={32} />
             </div>
-          </div>
 
-          {/* Action Buttons */}
-          <div style={{ display: "flex", justifyContent: "center", gap: "1rem", flexWrap: "wrap" }}>
-            <button
-              onClick={() => navigate("/dashboard")}
-              style={{
-                padding: "0.75rem 1.75rem",
-                borderRadius: "0.5rem",
-                background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
-                color: "#ffffff",
-                border: "none",
-                fontWeight: 600,
-                fontSize: "0.95rem",
-                cursor: "pointer",
-                boxShadow: "0 4px 12px rgba(99, 102, 241, 0.3)",
-                transition: "all 0.2s ease",
-              }}
-            >
-              Back to Dashboard
-            </button>
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--text-primary)] mb-3">
+              {featureName} is Coming Soon
+            </h1>
 
-            <button
-              onClick={() => navigate("/opportunities")}
-              style={{
-                padding: "0.75rem 1.75rem",
-                borderRadius: "0.5rem",
-                background: "transparent",
-                color: "var(--text-color, #f8fafc)",
-                border: "1px solid var(--border-color, #475569)",
-                fontWeight: 600,
-                fontSize: "0.95rem",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-              }}
-            >
-              Explore Opportunities
-            </button>
+            <p className="text-base text-[var(--text-secondary)] max-w-lg mx-auto mb-8 leading-relaxed">
+              We are engineering this feature with real-time industry analytics
+              and high-performance algorithms for the SkillBridge platform.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left mb-10 pt-6 border-t border-[var(--border-subtle)]">
+              <div className="bg-[var(--bg-muted)] p-4 rounded-xl border border-[var(--border-subtle)]">
+                <div className="flex items-center gap-2 text-[var(--primary)] mb-1.5 font-semibold text-sm">
+                  <Cpu size={16} />
+                  Real-Time Data Integration
+                </div>
+
+                <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                  Powered by our active MySQL opportunity aggregation engine.
+                </p>
+              </div>
+
+              <div className="bg-[var(--bg-muted)] p-4 rounded-xl border border-[var(--border-subtle)]">
+                <div className="flex items-center gap-2 text-[var(--accent-emerald)] mb-1.5 font-semibold text-sm">
+                  <ShieldCheck size={16} />
+                  Verified Industry Quality
+                </div>
+
+                <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                  Ensuring smooth collaboration between students and academia.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-center gap-4 flex-wrap">
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="px-7 py-3 rounded-lg bg-[var(--primary-lighter)] text-[var(--text-on-primary)] border border-[var(--primary)] font-semibold text-sm shadow-[var(--shadow-md)] hover:bg-[var(--primary-hover)] active:bg-[var(--primary-active)] transition-all duration-200"
+              >
+                Back to Dashboard
+              </button>
+
+              <button
+                onClick={() => navigate("/opportunities")}
+                className="px-7 py-3 rounded-lg bg-transparent text-[var(--text-primary)] border border-[var(--border-color)] font-semibold text-sm hover:bg-[var(--bg-card-hover)] hover:border-[var(--border-color-hover)] transition-all duration-200"
+              >
+                Explore Opportunities
+              </button>
+            </div>
           </div>
         </div>
       </div>

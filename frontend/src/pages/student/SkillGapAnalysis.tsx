@@ -89,7 +89,7 @@ const SkillGapAnalysisPage: React.FC = () => {
   }, [fetchGapAnalysis]);
 
   const categories = Array.from(
-    new Set(skills.map((s) => s.category).filter(Boolean))
+    new Set(skills.map((s) => s.category).filter(Boolean)),
   );
 
   const filteredSkills = skills.filter((item) => {
@@ -157,10 +157,7 @@ const SkillGapAnalysisPage: React.FC = () => {
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 bg-[var(--bg-muted)] border border-[var(--border-color)] rounded-2xl space-y-4">
-            <Loader2
-              className="animate-spin text-[var(--primary)]"
-              size={36}
-            />
+            <Loader2 className="animate-spin text-[var(--primary)]" size={36} />
 
             <p className="text-[var(--text-muted)] text-sm font-medium">
               Calculating skill gap matrices from database...
@@ -219,8 +216,8 @@ const SkillGapAnalysisPage: React.FC = () => {
                     </div>
 
                     <p className="text-[11px] text-[var(--text-muted)] mt-2">
-                      Skills where your proficiency matches or exceeds
-                      industry demand.
+                      Skills where your proficiency matches or exceeds industry
+                      demand.
                     </p>
                   </div>
                 </div>
@@ -264,8 +261,8 @@ const SkillGapAnalysisPage: React.FC = () => {
                     </div>
 
                     <p className="text-[11px] text-[var(--text-muted)] mt-2">
-                      {summary.unpossessedDemandedCount} required skills not
-                      yet assessed or acquired.
+                      {summary.unpossessedDemandedCount} required skills not yet
+                      assessed or acquired.
                     </p>
                   </div>
                 </div>
@@ -279,27 +276,21 @@ const SkillGapAnalysisPage: React.FC = () => {
                     </h3>
 
                     <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                      Real-time comparison of your verified score vs. active
-                      job posting requirements.
+                      Real-time comparison of your verified score vs. active job
+                      posting requirements.
                     </p>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="flex items-center gap-1.5 bg-[var(--bg-muted)] border border-[var(--border-color)] rounded-xl px-3 py-1.5 text-xs">
-                      <Filter
-                        size={14}
-                        className="text-[var(--primary)]"
-                      />
+                      <Filter size={14} className="text-[var(--primary)]" />
 
                       <select
                         className="bg-transparent text-[var(--text-secondary)] font-medium focus:outline-none cursor-pointer"
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
                       >
-                        <option
-                          value="all"
-                          className="bg-[var(--bg-elevated)]"
-                        >
+                        <option value="all" className="bg-[var(--bg-elevated)]">
                           All Statuses
                         </option>
                         <option
@@ -408,8 +399,8 @@ const SkillGapAnalysisPage: React.FC = () => {
                                 item.status === "Strong"
                                   ? "bg-[var(--accent-emerald-bg)] border border-[var(--accent-emerald)]/30 text-[var(--accent-emerald)]"
                                   : item.status === "Needs Improvement"
-                                  ? "bg-[var(--accent-amber-bg)] border border-[var(--accent-amber)]/30 text-[var(--accent-amber)]"
-                                  : "bg-[var(--accent-rose-bg)] border border-[var(--accent-rose)]/30 text-[var(--accent-rose)]"
+                                    ? "bg-[var(--accent-amber-bg)] border border-[var(--accent-amber)]/30 text-[var(--accent-amber)]"
+                                    : "bg-[var(--accent-rose-bg)] border border-[var(--accent-rose)]/30 text-[var(--accent-rose)]"
                               }`}
                             >
                               {item.status === "Strong" &&
@@ -441,8 +432,8 @@ const SkillGapAnalysisPage: React.FC = () => {
                                     item.status === "Strong"
                                       ? "bg-[var(--accent-emerald)]"
                                       : item.status === "Needs Improvement"
-                                      ? "bg-[var(--accent-amber)]"
-                                      : "bg-[var(--accent-rose)]"
+                                        ? "bg-[var(--accent-amber)]"
+                                        : "bg-[var(--accent-rose)]"
                                   }`}
                                   style={{
                                     width: `${item.studentProficiency}%`,
@@ -490,7 +481,7 @@ const SkillGapAnalysisPage: React.FC = () => {
                                   skillName: item.skillName,
                                 })
                               }
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--text-on-primary)] rounded-xl text-xs font-semibold transition-all shadow-[var(--shadow-sm)] cursor-pointer shrink-0"
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--primary-lighter)] hover:bg-[var(--primary-hover)] text-[var(--text-on-primary)] rounded-xl text-xs font-semibold transition-all shadow-[var(--shadow-sm)] cursor-pointer shrink-0"
                             >
                               <Award size={14} />
                               Take Skill Assessment
