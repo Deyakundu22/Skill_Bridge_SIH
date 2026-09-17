@@ -6,7 +6,6 @@ import {
   User as UserIcon,
   Eye,
   EyeOff,
-  Sparkles,
   ArrowRight,
   GraduationCap,
   Building2,
