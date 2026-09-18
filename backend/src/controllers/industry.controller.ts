@@ -23,7 +23,7 @@ const formatIndustryProfile = (row: any) => ({
 
 export const getProfile = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const userId = req.user?.id;
 
@@ -35,29 +35,30 @@ export const getProfile = async (
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
       `SELECT * FROM industry_profiles WHERE user_id = ?`,
-      [userId]
+      [userId],
     );
 
     if (!rows || rows.length === 0) {
       // Auto-create default profile for this industry user if missing
       const [userRows] = await pool.query<RowDataPacket[]>(
         `SELECT name, email FROM users WHERE id = ?`,
-        [userId]
+        [userId],
       );
 
-      const defaultCompanyName = userRows.length > 0 ? userRows[0].name : "My Company";
+      const defaultCompanyName =
+        userRows.length > 0 ? userRows[0].name : "My Company";
       const defaultEmail = userRows.length > 0 ? userRows[0].email : null;
 
       await pool.query(
         `INSERT INTO industry_profiles (user_id, company_name, contact_email, verification_status)
          VALUES (?, ?, ?, 'pending')
          ON DUPLICATE KEY UPDATE user_id=user_id`,
-        [userId, defaultCompanyName, defaultEmail]
+        [userId, defaultCompanyName, defaultEmail],
       );
 
       const [reQueried] = await pool.query<RowDataPacket[]>(
         `SELECT * FROM industry_profiles WHERE user_id = ?`,
-        [userId]
+        [userId],
       );
 
       if (reQueried.length > 0) {
@@ -84,7 +85,7 @@ export const getProfile = async (
 
 export const createProfile = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const userId = req.user?.id;
 
@@ -103,27 +104,35 @@ export const createProfile = async (
       return;
     }
 
-
     const [existing] = await pool.query<RowDataPacket[]>(
       `SELECT id FROM industry_profiles WHERE user_id = ?`,
-      [userId]
+      [userId],
     );
 
     if (existing && existing.length > 0) {
       res.status(409).json({
         success: false,
-        message: "Industry profile already exists. Use PUT /api/industry/profile to update.",
+        message: "Industry profile already exists.",
       });
       return;
     }
 
-    const companyName = req.body.companyName || req.body.company_name || req.user?.username || "Company Name";
+    const companyName =
+      req.body.companyName ||
+      req.body.company_name ||
+      req.user?.username ||
+      "Company Name";
     const companyType = req.body.companyType || req.body.company_type || null;
-    const industrySector = req.body.industrySector || req.body.industry_sector || null;
+    const industrySector =
+      req.body.industrySector || req.body.industry_sector || null;
     const description = req.body.description || null;
     const website = req.body.website || null;
     const location = req.body.location || null;
-    const contactEmail = req.body.contactEmail || req.body.contact_email || req.user?.email || null;
+    const contactEmail =
+      req.body.contactEmail ||
+      req.body.contact_email ||
+      req.user?.email ||
+      null;
     const phone = req.body.phone || null;
     const logo = req.body.logo || null;
 
@@ -142,12 +151,12 @@ export const createProfile = async (
         contactEmail,
         phone,
         logo,
-      ]
+      ],
     );
 
     const [createdRows] = await pool.query<RowDataPacket[]>(
       `SELECT * FROM industry_profiles WHERE user_id = ?`,
-      [userId]
+      [userId],
     );
 
     res.status(201).json({
@@ -166,7 +175,7 @@ export const createProfile = async (
 
 export const updateProfile = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const userId = req.user?.id;
 
@@ -185,33 +194,41 @@ export const updateProfile = async (
       return;
     }
 
-
     // Fetch existing profile if available
     const [existingRows] = await pool.query<RowDataPacket[]>(
       `SELECT * FROM industry_profiles WHERE user_id = ?`,
-      [userId]
+      [userId],
     );
 
     const existing = existingRows[0] || {};
 
     const companyName =
-      req.body.companyName ?? req.body.company_name ?? existing.company_name ?? req.user?.username ?? "Company Name";
+      req.body.companyName ??
+      req.body.company_name ??
+      existing.company_name ??
+      req.user?.username ??
+      "Company Name";
     const companyType =
-      req.body.companyType ?? req.body.company_type ?? existing.company_type ?? null;
+      req.body.companyType ??
+      req.body.company_type ??
+      existing.company_type ??
+      null;
     const industrySector =
-      req.body.industrySector ?? req.body.industry_sector ?? existing.industry_sector ?? null;
-    const description =
-      req.body.description ?? existing.description ?? null;
-    const website =
-      req.body.website ?? existing.website ?? null;
-    const location =
-      req.body.location ?? existing.location ?? null;
+      req.body.industrySector ??
+      req.body.industry_sector ??
+      existing.industry_sector ??
+      null;
+    const description = req.body.description ?? existing.description ?? null;
+    const website = req.body.website ?? existing.website ?? null;
+    const location = req.body.location ?? existing.location ?? null;
     const contactEmail =
-      req.body.contactEmail ?? req.body.contact_email ?? existing.contact_email ?? req.user?.email ?? null;
-    const phone =
-      req.body.phone ?? existing.phone ?? null;
-    const logo =
-      req.body.logo ?? existing.logo ?? null;
+      req.body.contactEmail ??
+      req.body.contact_email ??
+      existing.contact_email ??
+      req.user?.email ??
+      null;
+    const phone = req.body.phone ?? existing.phone ?? null;
+    const logo = req.body.logo ?? existing.logo ?? null;
 
     // INSERT or UPDATE without touching verification_status or rejection_reason
     await pool.query<ResultSetHeader>(
@@ -239,12 +256,12 @@ export const updateProfile = async (
         contactEmail,
         phone,
         logo,
-      ]
+      ],
     );
 
     const [updatedRows] = await pool.query<RowDataPacket[]>(
       `SELECT * FROM industry_profiles WHERE user_id = ?`,
-      [userId]
+      [userId],
     );
 
     res.status(200).json({

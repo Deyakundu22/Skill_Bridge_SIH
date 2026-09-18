@@ -14,6 +14,7 @@ export interface MasterSkill {
 
 export interface StudentProfileData {
   name: string;
+  username?: string;
   email: string;
   phone?: string;
   location?: string;
@@ -33,11 +34,14 @@ export interface StudentProfileData {
   github?: string;
   linkedin?: string;
   portfolio?: string;
+  website?: string;
+  profile_website?: string;
   work_mode_preference?: string;
   expected_stipend_min?: number;
   expected_stipend_max?: number;
   preferred_locations?: string[];
   target_roles?: string[];
+  verification_status?: string;
 }
 
 export interface SkillItem {

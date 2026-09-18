@@ -803,7 +803,7 @@
 
 .panel {
   background: var(--bg-card);
-  
+
   border: 1px solid var(--border-color);
   border-radius: var(--radius-xl);
   padding: 1.5rem;
@@ -5426,4 +5426,94 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
+}
+.action-button-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.action-button-group button {
+  border: 1px solid transparent;
+  border-radius: 7px;
+  padding: 7px 13px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
+}
+
+.action-button-group button:hover {
+  transform: translateY(-1px);
+}
+
+.action-button-group button:active {
+  transform: translateY(0);
+}
+
+/* Accept */
+.btn-action-accept {
+  color: #16a34a;
+  background: rgba(22, 163, 74, 0.08);
+  border-color: rgba(22, 163, 74, 0.2) !important;
+}
+
+.btn-action-accept:hover {
+  color: #15803d;
+  background: rgba(22, 163, 74, 0.15);
+  border-color: rgba(22, 163, 74, 0.35) !important;
+  box-shadow: 0 3px 10px rgba(22, 163, 74, 0.12);
+}
+
+/* Complete */
+.btn-action-complete {
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.08);
+  border-color: rgba(37, 99, 235, 0.2) !important;
+}
+
+.btn-action-complete:hover {
+  color: #1d4ed8;
+  background: rgba(37, 99, 235, 0.15);
+  border-color: rgba(37, 99, 235, 0.35) !important;
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.12);
+}
+
+/* Reject */
+.btn-action-reject {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.08);
+  border-color: rgba(220, 38, 38, 0.2) !important;
+}
+
+.btn-action-reject:hover {
+  color: #b91c1c;
+  background: rgba(220, 38, 38, 0.15);
+  border-color: rgba(220, 38, 38, 0.35) !important;
+  box-shadow: 0 3px 10px rgba(220, 38, 38, 0.12);
+}
+
+/* Keyboard accessibility */
+.action-button-group button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .action-button-group {
+    gap: 6px;
+  }
+
+  .action-button-group button {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
 }

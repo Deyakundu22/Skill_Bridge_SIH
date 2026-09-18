@@ -4,7 +4,7 @@ import type { RowDataPacket, ResultSetHeader } from "mysql2";
 
 export const getStudentProfile = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const userId = req.user?.id;
 
@@ -40,6 +40,7 @@ export const getStudentProfile = async (
         sp.github, 
         sp.linkedin, 
         sp.portfolio,
+        sp.verification_status,
         sp.work_mode_preference,
         sp.expected_stipend_min,
         sp.expected_stipend_max,
@@ -49,7 +50,7 @@ export const getStudentProfile = async (
        LEFT JOIN student_profiles sp ON u.id = sp.user_id 
        LEFT JOIN institutions inst ON sp.institution_id = inst.id
        WHERE u.id = ?`,
-      [userId]
+      [userId],
     );
 
     if (profileRows.length === 0) {
@@ -65,7 +66,7 @@ export const getStudentProfile = async (
         `INSERT INTO student_profiles (user_id, institution_id, degree, department, cgpa, location, bio)
          VALUES (?, NULL, NULL, NULL, NULL, NULL, NULL)
          ON DUPLICATE KEY UPDATE user_id=user_id`,
-        [userId]
+        [userId],
       );
 
       // Re-query profile with formatted dob
@@ -93,6 +94,7 @@ export const getStudentProfile = async (
           sp.github, 
           sp.linkedin, 
           sp.portfolio,
+          sp.verification_status,
           sp.work_mode_preference,
           sp.expected_stipend_min,
           sp.expected_stipend_max,
@@ -102,7 +104,7 @@ export const getStudentProfile = async (
          LEFT JOIN student_profiles sp ON u.id = sp.user_id 
          LEFT JOIN institutions inst ON sp.institution_id = inst.id
          WHERE u.id = ?`,
-        [userId]
+        [userId],
       );
       if (reQueried.length > 0) {
         rawProfile = reQueried[0];
@@ -139,7 +141,7 @@ export const getStudentProfile = async (
        JOIN skills s ON ss.skill_id = s.id 
        WHERE ss.student_id = ?
        ORDER BY ss.id DESC`,
-      [studentProfileId]
+      [studentProfileId],
     );
 
     // 3. Fetch Projects
@@ -148,7 +150,7 @@ export const getStudentProfile = async (
        FROM student_projects 
        WHERE student_id = ?
        ORDER BY id DESC`,
-      [studentProfileId]
+      [studentProfileId],
     );
 
     const projects = (projectRows || []).map((p) => ({
@@ -165,7 +167,7 @@ export const getStudentProfile = async (
        FROM student_certifications 
        WHERE student_id = ?
        ORDER BY id DESC`,
-      [studentProfileId]
+      [studentProfileId],
     );
 
     const primaryRole =
@@ -173,13 +175,18 @@ export const getStudentProfile = async (
         ? profile.target_roles[0]
         : (rawProfile as any).department || "Software Engineer";
 
-    const calculatedMatchScore = skills.length > 0 ? Math.min(98, 70 + skills.length * 6) : null;
+    const calculatedMatchScore =
+      skills.length > 0 ? Math.min(98, 70 + skills.length * 6) : null;
 
     if (calculatedMatchScore !== (rawProfile as any).career_match_score) {
-      pool.query(
-        `UPDATE student_profiles SET career_match_score = ? WHERE id = ?`,
-        [calculatedMatchScore, studentProfileId]
-      ).catch((err) => console.error("Error updating career_match_score in DB:", err));
+      pool
+        .query(
+          `UPDATE student_profiles SET career_match_score = ? WHERE id = ?`,
+          [calculatedMatchScore, studentProfileId],
+        )
+        .catch((err) =>
+          console.error("Error updating career_match_score in DB:", err),
+        );
       (profile as any).career_match_score = calculatedMatchScore;
     }
 
@@ -197,7 +204,7 @@ export const getStudentProfile = async (
 
 export const updateStudentProfile = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const userId = req.user?.id;
 
@@ -236,17 +243,34 @@ export const updateStudentProfile = async (
   try {
     // Update user full name in users table if changed
     if (name) {
-      await pool.query(`UPDATE users SET name = ? WHERE id = ?`, [name, userId]);
+      await pool.query(`UPDATE users SET name = ? WHERE id = ?`, [
+        name,
+        userId,
+      ]);
     }
 
-    const cleanInstId = institution_id ? parseInt(String(institution_id)) || null : null;
-    const cleanDob = dob && typeof dob === "string" && dob.trim() !== "" ? dob.split("T")[0] : null;
+    const cleanInstId = institution_id
+      ? parseInt(String(institution_id)) || null
+      : null;
+    const cleanDob =
+      dob && typeof dob === "string" && dob.trim() !== ""
+        ? dob.split("T")[0]
+        : null;
     const cleanCgpa = cgpa ? parseFloat(cgpa) || null : null;
-    const cleanStipendMin = expected_stipend_min ? parseInt(expected_stipend_min) || null : null;
-    const cleanStipendMax = expected_stipend_max ? parseInt(expected_stipend_max) || null : null;
+    const cleanStipendMin = expected_stipend_min
+      ? parseInt(expected_stipend_min) || null
+      : null;
+    const cleanStipendMax = expected_stipend_max
+      ? parseInt(expected_stipend_max) || null
+      : null;
 
     const rawStudentId = student_id !== undefined ? student_id : studentId;
-    const cleanStudentId = rawStudentId && typeof rawStudentId === "string" && rawStudentId.trim() !== "" ? rawStudentId.trim() : null;
+    const cleanStudentId =
+      rawStudentId &&
+      typeof rawStudentId === "string" &&
+      rawStudentId.trim() !== ""
+        ? rawStudentId.trim()
+        : null;
 
     await pool.query<ResultSetHeader>(
       `INSERT INTO student_profiles (
@@ -302,7 +326,7 @@ export const updateStudentProfile = async (
         cleanStipendMax,
         preferred_locations ? JSON.stringify(preferred_locations) : null,
         target_roles ? JSON.stringify(target_roles) : null,
-      ]
+      ],
     );
 
     res
@@ -316,14 +340,14 @@ export const updateStudentProfile = async (
 
 export const getInstitutions = async (
   _req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
       `SELECT id, name, code, location, website, verification_status 
        FROM institutions 
        WHERE verification_status IS NULL OR verification_status = 'approved' OR verification_status = 'verified'
-       ORDER BY name ASC`
+       ORDER BY name ASC`,
     );
     res.status(200).json(rows);
   } catch (error: any) {
@@ -338,12 +362,12 @@ export const getInstitutions = async (
 const getStudentProfileId = async (userId: number): Promise<number> => {
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT id FROM student_profiles WHERE user_id = ?`,
-    [userId]
+    [userId],
   );
   if (rows.length === 0) {
     const [result] = await pool.query<ResultSetHeader>(
       `INSERT INTO student_profiles (user_id) VALUES (?)`,
-      [userId]
+      [userId],
     );
     return result.insertId;
   }
@@ -355,7 +379,7 @@ const getStudentProfileId = async (userId: number): Promise<number> => {
  */
 export const fetchGitHubRepos = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { username } = req.body;
@@ -363,7 +387,10 @@ export const fetchGitHubRepos = async (
 
     // Extract username if a full URL was provided
     if (cleanUsername && cleanUsername.includes("github.com/")) {
-      cleanUsername = cleanUsername.split("github.com/")[1].split("/")[0].trim();
+      cleanUsername = cleanUsername
+        .split("github.com/")[1]
+        .split("/")[0]
+        .trim();
     }
 
     if (!cleanUsername) {
@@ -371,15 +398,20 @@ export const fetchGitHubRepos = async (
       return;
     }
 
-    const ghRes = await fetch(`https://api.github.com/users/${encodeURIComponent(cleanUsername)}/repos?sort=updated&per_page=30`, {
-      headers: {
-        "User-Agent": "SkillBridge-App",
-        "Accept": "application/vnd.github.v3+json",
+    const ghRes = await fetch(
+      `https://api.github.com/users/${encodeURIComponent(cleanUsername)}/repos?sort=updated&per_page=30`,
+      {
+        headers: {
+          "User-Agent": "SkillBridge-App",
+          Accept: "application/vnd.github.v3+json",
+        },
       },
-    });
+    );
 
     if (ghRes.status === 404) {
-      res.status(404).json({ error: `GitHub user "${cleanUsername}" not found` });
+      res
+        .status(404)
+        .json({ error: `GitHub user "${cleanUsername}" not found` });
       return;
     }
 
@@ -420,7 +452,9 @@ export const fetchGitHubRepos = async (
     });
   } catch (error: any) {
     console.error("fetchGitHubRepos error:", error);
-    res.status(500).json({ error: `Failed to fetch GitHub repos: ${error.message}` });
+    res
+      .status(500)
+      .json({ error: `Failed to fetch GitHub repos: ${error.message}` });
   }
 };
 
@@ -429,7 +463,7 @@ export const fetchGitHubRepos = async (
  */
 export const importGitHubProjects = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const userId = req.user?.id;
   if (!userId) {
@@ -440,7 +474,9 @@ export const importGitHubProjects = async (
   try {
     const { repos } = req.body;
     if (!Array.isArray(repos) || repos.length === 0) {
-      res.status(400).json({ error: "At least one project repository must be selected" });
+      res
+        .status(400)
+        .json({ error: "At least one project repository must be selected" });
       return;
     }
 
@@ -449,21 +485,32 @@ export const importGitHubProjects = async (
     for (const repo of repos) {
       const title = repo.name || repo.title || "GitHub Repository";
       const description = repo.description || "Imported from GitHub";
-      const techStack = Array.isArray(repo.tech_stack) ? repo.tech_stack : (repo.language ? [repo.language] : []);
+      const techStack = Array.isArray(repo.tech_stack)
+        ? repo.tech_stack
+        : repo.language
+          ? [repo.language]
+          : [];
       const repoUrl = repo.html_url || repo.repo_url || null;
       const projectUrl = repo.homepage || repo.project_url || repoUrl;
 
       // Avoid duplicating existing projects with same title and student_id
       const [existing] = await pool.query<RowDataPacket[]>(
         `SELECT id FROM student_projects WHERE student_id = ? AND title = ?`,
-        [studentId, title]
+        [studentId, title],
       );
 
       if (existing.length === 0) {
         await pool.query(
           `INSERT INTO student_projects (student_id, title, description, tech_stack, status, project_url, repo_url)
            VALUES (?, ?, ?, ?, 'Completed', ?, ?)`,
-          [studentId, title, description, JSON.stringify(techStack), projectUrl, repoUrl]
+          [
+            studentId,
+            title,
+            description,
+            JSON.stringify(techStack),
+            projectUrl,
+            repoUrl,
+          ],
         );
       }
     }
@@ -474,12 +521,15 @@ export const importGitHubProjects = async (
        FROM student_projects 
        WHERE student_id = ? 
        ORDER BY id DESC`,
-      [studentId]
+      [studentId],
     );
 
     const formatted = updatedProjects.map((p) => ({
       ...p,
-      tech_stack: typeof p.tech_stack === "string" ? JSON.parse(p.tech_stack) : p.tech_stack || [],
+      tech_stack:
+        typeof p.tech_stack === "string"
+          ? JSON.parse(p.tech_stack)
+          : p.tech_stack || [],
     }));
 
     res.status(200).json({
@@ -497,7 +547,7 @@ export const importGitHubProjects = async (
  */
 export const addStudentProject = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const userId = req.user?.id;
   if (!userId) {
@@ -506,7 +556,8 @@ export const addStudentProject = async (
   }
 
   try {
-    const { title, description, tech_stack, status, project_url, repo_url } = req.body;
+    const { title, description, tech_stack, status, project_url, repo_url } =
+      req.body;
     if (!title) {
       res.status(400).json({ error: "Project title is required" });
       return;
@@ -516,8 +567,11 @@ export const addStudentProject = async (
     const stackArray = Array.isArray(tech_stack)
       ? tech_stack
       : typeof tech_stack === "string"
-      ? tech_stack.split(",").map((s: string) => s.trim()).filter(Boolean)
-      : [];
+        ? tech_stack
+            .split(",")
+            .map((s: string) => s.trim())
+            .filter(Boolean)
+        : [];
 
     const [result] = await pool.query<ResultSetHeader>(
       `INSERT INTO student_projects (student_id, title, description, tech_stack, status, project_url, repo_url)
@@ -530,7 +584,7 @@ export const addStudentProject = async (
         status || "Completed",
         project_url || null,
         repo_url || null,
-      ]
+      ],
     );
 
     res.status(201).json({
@@ -556,7 +610,7 @@ export const addStudentProject = async (
  */
 export const deleteStudentProject = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const userId = req.user?.id;
   if (!userId) {
@@ -570,13 +624,14 @@ export const deleteStudentProject = async (
 
     await pool.query(
       `DELETE FROM student_projects WHERE id = ? AND student_id = ?`,
-      [id, studentId]
+      [id, studentId],
     );
 
     res.status(200).json({ message: "Project deleted successfully" });
   } catch (error: any) {
     console.error("deleteStudentProject error:", error);
-    res.status(500).json({ error: `Failed to delete project: ${error.message}` });
+    res
+      .status(500)
+      .json({ error: `Failed to delete project: ${error.message}` });
   }
 };
-
