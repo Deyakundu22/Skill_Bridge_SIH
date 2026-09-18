@@ -19,12 +19,12 @@ import {
 } from "lucide-react";
 
 import { useNavigate, useLocation } from "react-router-dom";
-import SideItem from "../common/SideItem";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 import type { StudentProfileData } from "../../types/profile";
 
 import { API_BASE_URL } from "../../config/api";
+import SideItem from "../common/SideItem";
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -70,10 +70,7 @@ const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
           const result = await res.json();
           if (result && result.profile) {
             setProfileData(result.profile);
-            sessionStorage.setItem(
-              "sb_student_profile",
-              JSON.stringify(result),
-            );
+            sessionStorage.setItem("sb_student_profile", JSON.stringify(result));
           }
         }
       } catch (err) {
@@ -112,17 +109,11 @@ const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
     "faculty",
     "institute",
   ].includes(role);
-  const SideItem = ({ icon, text, className = "" }) => {
-    return (
-      <div className={`side-item ${className}`}>
-        {icon}
-        <span>{text}</span>
-      </div>
-    );
-  };
+
   const isHomeActive =
     location.pathname === "/dashboard" || location.pathname === "/";
-  const isDetailsActive = location.pathname === "/student/details";
+  const isDetailsActive =
+    location.pathname === "/student/details";
   const isIndustryActive = location.pathname === "/industry/profile";
   const isIndustryOppActive = location.pathname === "/industry/opportunities";
   const isIndustryQuestionsActive = location.pathname === "/industry/questions";
@@ -138,8 +129,7 @@ const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
   const isSavedActive = location.pathname === "/student/saved";
   const isLearningActive = location.pathname === "/student/learning";
   const isExperiencesActive =
-    location.pathname === "/student/experiences" ||
-    location.pathname === "/experiences";
+    location.pathname === "/student/experiences" || location.pathname === "/experiences";
 
   // Calculate 2-letter initials from name, stripping titles (Dr., Prof., Mr., etc.)
   const getInitials = (name?: string): string => {
@@ -239,15 +229,8 @@ const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
       <aside className={`sidebar custom-scrollbar ${isOpen ? "open" : ""}`}>
         {/* Mobile Header */}
         <div className="sidebar-header-mobile">
-          <div
-            className="logo cursor-pointer"
-            onClick={() => handleNavigation("/dashboard")}
-          >
-            <img
-              src="/logo.jpeg"
-              alt="SkillBridge Logo"
-              className="logo-icon object-cover"
-            />
+          <div className="logo cursor-pointer" onClick={() => handleNavigation("/dashboard")}>
+            <img src="/logo.jpeg" alt="SkillBridge Logo" className="logo-icon object-cover" />
             <strong>SkillBridge</strong>
           </div>
 
@@ -503,11 +486,7 @@ const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
                 onClick={() => handleNavigation("/student/saved")}
                 style={{ cursor: "pointer" }}
               >
-                <SideItem
-                  icon={<Bookmark />}
-                  text="Saved"
-                  active={isSavedActive}
-                />
+                <SideItem icon={<Bookmark />} text="Saved" active={isSavedActive} />
               </div>
               <div
                 onClick={() =>
@@ -562,12 +541,8 @@ const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
           )}
 
           <div className="nav-heading">ACCOUNT</div>
-          <div onClick={handleLogout} className="cursor-pointer">
-            <SideItem
-              icon={<LogOut />}
-              text="Sign Out"
-              className="text-red-600"
-            />
+          <div onClick={handleLogout} style={{ cursor: "pointer" }}>
+            <SideItem icon={<LogOut />} text="Sign Out" />
           </div>
         </nav>
       </aside>

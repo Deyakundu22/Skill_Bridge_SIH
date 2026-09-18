@@ -24,7 +24,6 @@ import {
   Plus,
   Trash2,
   ExternalLink,
-  RefreshCw,
   X,
   Building,
   ShieldAlert,
@@ -35,7 +34,6 @@ import { useSearchParams } from "react-router-dom";
 import { SkillAssessment } from "../components/student/SkillAssessment";
 import type {
   ProfileApiResponse,
-  StudentProfileData,
   Institution,
   MasterSkill,
 } from "../types/profile";
@@ -56,11 +54,8 @@ export const Profile: React.FC = () => {
   const { token, user } = useAuth();
   const [searchParams] = useSearchParams();
 
-  // Determine Role (Defaulting to student if unassigned)
   const rawRole = (user?.role || "student").toLowerCase();
   const isAcademicUser = rawRole === "student" || rawRole === "faculty";
-  const isCorporateOrAdmin =
-    rawRole === "industry" || rawRole === "institution" || rawRole === "admin";
 
   const initialTab = (searchParams.get("tab") as Tab) || "personal";
   const [activeTab, setActiveTab] = useState<Tab>(
@@ -69,60 +64,47 @@ export const Profile: React.FC = () => {
       : "personal"
   );
 
-  // Sync tab state when URL query parameters change
   useEffect(() => {
     const tabParam = searchParams.get("tab") as Tab;
     if (
       tabParam &&
       ["personal", "academic", "skills", "preferences", "projects", "documents"].includes(tabParam)
     ) {
-      // Fallback to personal tab if an academic tab is selected for corporate users
-      if (isCorporateOrAdmin && ["academic", "skills", "preferences"].includes(tabParam)) {
+      if (!isAcademicUser && ["academic", "skills", "preferences"].includes(tabParam)) {
         setActiveTab("personal");
       } else {
         setActiveTab(tabParam);
       }
     }
-  }, [searchParams, isCorporateOrAdmin]);
+  }, [searchParams, isAcademicUser]);
 
   const [isEditing, setIsEditing] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
 
   const [data, setData] = useState<ProfileApiResponse | null>(null);
-  const [formData, setFormData] = useState<StudentProfileData | any>(null);
+  const [formData, setFormData] = useState<any>(null);
   const [targetRolesInput, setTargetRolesInput] = useState<string>("");
-  const [preferredLocationsInput, setPreferredLocationsInput] = useState<string>("");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
 
-  // Skills section state
+  // Skills state
   const [masterSkills, setMasterSkills] = useState<MasterSkill[]>([]);
   const [selectedSkillId, setSelectedSkillId] = useState<number | "">("");
   const [skillAddLoading, setSkillAddLoading] = useState(false);
   const [skillActionMessage, setSkillActionMessage] = useState<string | null>(null);
   const [skillActionError, setSkillActionError] = useState<string | null>(null);
 
-  // Active Assessment state
+  // Assessment modal state
   const [activeAssessmentSkill, setActiveAssessmentSkill] = useState<{
     skillId: number;
     skillName: string;
     skillCategory?: string;
   } | null>(null);
 
-  // GitHub Repo Sync & Modal State
-  const [githubSyncLoading, setGithubSyncLoading] = useState(false);
-  const [githubSyncError, setGithubSyncError] = useState<string | null>(null);
-  const [githubSyncRepos, setGithubSyncRepos] = useState<any[]>([]);
-  const [githubSyncUsername, setGithubSyncUsername] = useState<string>("");
-  const [showGitHubModal, setShowGitHubModal] = useState(false);
-  const [selectedRepoIds, setSelectedRepoIds] = useState<number[]>([]);
-  const [importLoading, setImportLoading] = useState(false);
-  const [importSuccessMsg, setImportSuccessMsg] = useState<string | null>(null);
-
-  // Add Project Modal State
+  // Add Project modal state
   const [showAddProjectModal, setShowAddProjectModal] = useState(false);
   const [newProjData, setNewProjData] = useState({
     title: "",
@@ -133,37 +115,21 @@ export const Profile: React.FC = () => {
     status: "Completed",
   });
   const [addProjLoading, setAddProjLoading] = useState(false);
-  const [addProjError, setAddProjError] = useState<string | null>(null);
 
-  // Add Certification Modal State
-  const [showAddCertModal, setShowAddCertModal] = useState(false);
-  const [newCertData, setNewCertData] = useState({
-    title: "",
-    issuer: "",
-    issueYear: new Date().getFullYear().toString(),
-    credentialUrl: "",
-  });
-  const [addCertLoading, setAddCertLoading] = useState(false);
-  const [addCertError, setAddCertError] = useState<string | null>(null);
-
-  // Fetch master institutions & master skills on load
   useEffect(() => {
     if (isAcademicUser) {
       fetch(`${API_BASE_URL}/student/institutions`)
         .then((res) => res.json())
-        .then((data) => setInstitutions(Array.isArray(data) ? data : []))
+        .then((resData) => setInstitutions(Array.isArray(resData) ? resData : []))
         .catch(() => setInstitutions([]));
 
       fetch(`${API_BASE_URL}/skills`)
         .then((res) => res.json())
-        .then((data) => setMasterSkills(Array.isArray(data) ? data : []))
+        .then((resData) => setMasterSkills(Array.isArray(resData) ? resData : []))
         .catch((err) => console.error("Error fetching master skills:", err));
     }
   }, [isAcademicUser]);
 
-  /* ============================================================
-   * GET PROFILE
-   * ============================================================ */
   const fetchProfile = useCallback(
     async (forceRefresh = false) => {
       try {
@@ -173,25 +139,14 @@ export const Profile: React.FC = () => {
           if (cached) {
             try {
               const parsed = JSON.parse(cached);
-              if (parsed && (parsed.profile || parsed.user)) {
-                const profileObj = parsed.profile || parsed.user || parsed;
+              const profileObj = parsed?.profile || parsed?.user || parsed;
+              if (profileObj) {
                 setData(parsed);
-                
                 const rolesArray = Array.isArray(profileObj.target_roles)
                   ? [...profileObj.target_roles]
                   : [];
-                const locationsArray = Array.isArray(profileObj.preferred_locations)
-                  ? [...profileObj.preferred_locations]
-                  : [];
-
-                setFormData({
-                  ...profileObj,
-                  target_roles: rolesArray,
-                  preferred_locations: locationsArray,
-                });
-
+                setFormData({ ...profileObj, target_roles: rolesArray });
                 setTargetRolesInput(rolesArray.join(", "));
-                setPreferredLocationsInput(locationsArray.join(", "));
                 setError(null);
                 setLoading(false);
                 return;
@@ -201,9 +156,7 @@ export const Profile: React.FC = () => {
         }
 
         const authToken = token || localStorage.getItem("skillbridge_token");
-        if (!authToken) {
-          throw new Error("No authentication token found. Please sign in again.");
-        }
+        if (!authToken) throw new Error("No authentication token found. Please sign in again.");
 
         const endpoint = isAcademicUser
           ? `${API_BASE_URL}/student/profile`
@@ -219,9 +172,7 @@ export const Profile: React.FC = () => {
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => null);
-          throw new Error(
-            errorData?.error || `Failed to load profile. Server returned ${response.status}.`
-          );
+          throw new Error(errorData?.error || `Failed to load profile. Server returned ${response.status}.`);
         }
 
         const result = await response.json();
@@ -233,19 +184,14 @@ export const Profile: React.FC = () => {
         const rolesArray = Array.isArray(profileObj.target_roles)
           ? [...profileObj.target_roles]
           : [];
-        const locationsArray = Array.isArray(profileObj.preferred_locations)
-          ? [...profileObj.preferred_locations]
-          : [];
 
         setFormData({
           ...profileObj,
           name: profileObj.name || profileObj.username || profileObj.company_name || user?.name || "",
           target_roles: rolesArray,
-          preferred_locations: locationsArray,
         });
 
         setTargetRolesInput(rolesArray.join(", "));
-        setPreferredLocationsInput(locationsArray.join(", "));
         setError(null);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "Failed to load profile.");
@@ -257,18 +203,9 @@ export const Profile: React.FC = () => {
   );
 
   useEffect(() => {
-    const authToken = token || localStorage.getItem("skillbridge_token");
-    if (!authToken) {
-      setLoading(false);
-      setError("No authentication token found. Please sign in.");
-      return;
-    }
     fetchProfile();
-  }, [fetchProfile, token]);
+  }, [fetchProfile]);
 
-  /* ============================================================
-   * FORM INPUT HANDLERS
-   * ============================================================ */
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -279,19 +216,6 @@ export const Profile: React.FC = () => {
     }));
   };
 
-  const handleNumberChange = (
-    field: "expected_stipend_min" | "expected_stipend_max",
-    value: string
-  ) => {
-    setFormData((previous: any) => ({
-      ...previous,
-      [field]: value === "" ? null : Number(value),
-    }));
-  };
-
-  /* ============================================================
-   * SAVE PROFILE
-   * ============================================================ */
   const handleSave = async () => {
     if (!formData) return;
 
@@ -321,9 +245,7 @@ export const Profile: React.FC = () => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        throw new Error(
-          errorData?.error || `Failed to save profile. Server returned ${response.status}.`
-        );
+        throw new Error(errorData?.error || `Failed to save profile. Server returned ${response.status}.`);
       }
 
       await fetchProfile(true);
@@ -331,7 +253,6 @@ export const Profile: React.FC = () => {
 
       setIsEditing(false);
       setSaveSuccess(true);
-
       window.setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to save profile.");
@@ -350,25 +271,17 @@ export const Profile: React.FC = () => {
     const rolesArray = Array.isArray(profileObj.target_roles)
       ? [...profileObj.target_roles]
       : [];
-    const locationsArray = Array.isArray(profileObj.preferred_locations)
-      ? [...profileObj.preferred_locations]
-      : [];
 
     setFormData({
       ...profileObj,
       name: profileObj.name || profileObj.username || profileObj.company_name || "",
       target_roles: rolesArray,
-      preferred_locations: locationsArray,
     });
 
     setTargetRolesInput(rolesArray.join(", "));
-    setPreferredLocationsInput(locationsArray.join(", "));
     setIsEditing(false);
   };
 
-  /* ============================================================
-   * SKILLS ACTIONS HANDLERS
-   * ============================================================ */
   const selectedMasterSkill = masterSkills.find((s) => s.id === Number(selectedSkillId));
   const autoCategory = selectedMasterSkill ? selectedMasterSkill.category : "";
 
@@ -377,8 +290,7 @@ export const Profile: React.FC = () => {
       data?.skills?.some(
         (s) =>
           s.skill_id === Number(selectedSkillId) ||
-          (selectedMasterSkill &&
-            s.name.toLowerCase() === selectedMasterSkill.name.toLowerCase())
+          (selectedMasterSkill && s.name.toLowerCase() === selectedMasterSkill.name.toLowerCase())
       )
   );
 
@@ -449,99 +361,11 @@ export const Profile: React.FC = () => {
     }
   };
 
-  /* ============================================================
-   * GITHUB & PROJECT HANDLERS
-   * ============================================================ */
-  const handleFetchGitHubRepos = async (customUsername?: string) => {
-    const usernameToSync = customUsername || formData?.github || "";
-    if (!usernameToSync) {
-      setGithubSyncError("Please enter a valid GitHub username or profile URL first.");
-      setShowGitHubModal(true);
-      return;
-    }
-
-    setGithubSyncLoading(true);
-    setGithubSyncError(null);
-    setShowGitHubModal(true);
-
-    try {
-      const authToken = token || localStorage.getItem("skillbridge_token");
-      const res = await fetch(`${API_BASE_URL}/student/profile/github-repos`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username: usernameToSync }),
-      });
-
-      const resData = await res.json();
-      if (!res.ok) throw new Error(resData.error || "Failed to fetch GitHub repositories.");
-
-      setGithubSyncUsername(resData.username);
-      setGithubSyncRepos(resData.repos || []);
-      setSelectedRepoIds((resData.repos || []).map((r: any) => r.id));
-    } catch (err: any) {
-      setGithubSyncError(err.message || "Error connecting to GitHub API.");
-    } finally {
-      setGithubSyncLoading(false);
-    }
-  };
-
-  const toggleRepoSelection = (id: number) => {
-    setSelectedRepoIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
-
-  const handleImportSelectedRepos = async () => {
-    const selectedRepos = githubSyncRepos.filter((r) => selectedRepoIds.includes(r.id));
-    if (selectedRepos.length === 0) {
-      setGithubSyncError("Please select at least one repository to import.");
-      return;
-    }
-
-    setImportLoading(true);
-    setGithubSyncError(null);
-
-    try {
-      const authToken = token || localStorage.getItem("skillbridge_token");
-      const res = await fetch(`${API_BASE_URL}/student/profile/import-github-projects`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ repos: selectedRepos }),
-      });
-
-      const resData = await res.json();
-      if (!res.ok) throw new Error(resData.error || "Failed to import GitHub projects.");
-
-      setImportSuccessMsg(resData.message || "GitHub projects successfully imported!");
-      await fetchProfile(true);
-      window.dispatchEvent(new Event("profileUpdated"));
-
-      setTimeout(() => {
-        setShowGitHubModal(false);
-        setImportSuccessMsg(null);
-      }, 1500);
-    } catch (err: any) {
-      setGithubSyncError(err.message || "Import failed.");
-    } finally {
-      setImportLoading(false);
-    }
-  };
-
   const handleAddProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newProjData.title) {
-      setAddProjError("Project title is required.");
-      return;
-    }
+    if (!newProjData.title) return;
 
     setAddProjLoading(true);
-    setAddProjError(null);
 
     try {
       const authToken = token || localStorage.getItem("skillbridge_token");
@@ -569,7 +393,7 @@ export const Profile: React.FC = () => {
       await fetchProfile(true);
       window.dispatchEvent(new Event("profileUpdated"));
     } catch (err: any) {
-      setAddProjError(err.message || "Error creating project.");
+      alert(err.message || "Error creating project.");
     } finally {
       setAddProjLoading(false);
     }
@@ -594,74 +418,6 @@ export const Profile: React.FC = () => {
       window.dispatchEvent(new Event("profileUpdated"));
     } catch (err: any) {
       alert(err.message || "Error deleting project.");
-    }
-  };
-
-  const handleAddCert = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCertData.title || !newCertData.issuer) {
-      setAddCertError("Certification Title and Issuing Organization are required.");
-      return;
-    }
-
-    setAddCertLoading(true);
-    setAddCertError(null);
-
-    try {
-      const authToken = token || localStorage.getItem("skillbridge_token");
-      const res = await fetch(`${API_BASE_URL}/student/experiences/certifications`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title: newCertData.title,
-          issuer: newCertData.issuer,
-          issueYear: newCertData.issueYear,
-          credentialUrl: newCertData.credentialUrl,
-        }),
-      });
-
-      const resData = await res.json();
-      if (!res.ok) throw new Error(resData.message || resData.error || "Failed to add certification.");
-
-      setNewCertData({
-        title: "",
-        issuer: "",
-        issueYear: new Date().getFullYear().toString(),
-        credentialUrl: "",
-      });
-      setShowAddCertModal(false);
-      await fetchProfile(true);
-      window.dispatchEvent(new Event("profileUpdated"));
-    } catch (err: any) {
-      setAddCertError(err.message || "Error creating certification.");
-    } finally {
-      setAddCertLoading(false);
-    }
-  };
-
-  const handleDeleteCert = async (certId: number) => {
-    if (!window.confirm("Are you sure you want to delete this certification?")) return;
-    const authToken = token || localStorage.getItem("skillbridge_token");
-    if (!authToken) return;
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/student/experiences/certifications/${certId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${authToken}` },
-      });
-
-      if (!res.ok) {
-        const resData = await res.json();
-        throw new Error(resData.message || resData.error || "Failed to delete certification.");
-      }
-
-      await fetchProfile(true);
-      window.dispatchEvent(new Event("profileUpdated"));
-    } catch (err: any) {
-      alert(err.message || "Error deleting certification.");
     }
   };
 
@@ -716,7 +472,6 @@ export const Profile: React.FC = () => {
           <div className="identity-section">
             <div className="name-row">
               <h1>{displayName}</h1>
-
               <span className="verified-badge">
                 <ShieldCheck size={16} />
                 Verified {rawRole.charAt(0).toUpperCase() + rawRole.slice(1)}
@@ -771,11 +526,7 @@ export const Profile: React.FC = () => {
                   Cancel
                 </button>
                 <button className="btn-save" onClick={handleSave} disabled={saveLoading}>
-                  {saveLoading ? (
-                    <Loader2 size={16} className="spin-icon" />
-                  ) : (
-                    <Save size={16} />
-                  )}
+                  {saveLoading ? <Loader2 size={16} className="spin-icon" /> : <Save size={16} />}
                   Save Changes
                 </button>
               </>
@@ -922,7 +673,6 @@ export const Profile: React.FC = () => {
 
       {/* TAB CONTENT PANELS */}
       <div className="profile-tab-content">
-        {/* PERSONAL & CONTACT INFO */}
         {activeTab === "personal" && (
           <div className="tab-pane">
             <div className="card-header">
@@ -933,7 +683,6 @@ export const Profile: React.FC = () => {
             </div>
 
             <div className="form-grid">
-              {/* DISPLAY NAME / USERNAME */}
               <div className="form-group">
                 <label>{isAcademicUser ? "Full Name" : "Account / Entity Name"}</label>
                 {isEditing ? (
@@ -948,7 +697,6 @@ export const Profile: React.FC = () => {
                 )}
               </div>
 
-              {/* USERNAME */}
               <div className="form-group">
                 <label>Username</label>
                 {isEditing ? (
@@ -963,7 +711,6 @@ export const Profile: React.FC = () => {
                 )}
               </div>
 
-              {/* EMAIL */}
               <div className="form-group">
                 <label>Email Address</label>
                 <span className="field-value readonly">
@@ -971,7 +718,6 @@ export const Profile: React.FC = () => {
                 </span>
               </div>
 
-              {/* PHONE */}
               <div className="form-group">
                 <label>Phone Number</label>
                 {isEditing ? (
@@ -987,7 +733,6 @@ export const Profile: React.FC = () => {
                 )}
               </div>
 
-              {/* LOCATION */}
               <div className="form-group">
                 <label>Location</label>
                 {isEditing ? (
@@ -1005,7 +750,6 @@ export const Profile: React.FC = () => {
                 )}
               </div>
 
-              {/* DOB / FOUNDED DATE */}
               {isAcademicUser && (
                 <div className="form-group">
                   <label>Date of Birth</label>
@@ -1025,7 +769,6 @@ export const Profile: React.FC = () => {
                 </div>
               )}
 
-              {/* BIO */}
               <div className="form-group span-2">
                 <label>Bio / Description</label>
                 {isEditing ? (
@@ -1041,7 +784,6 @@ export const Profile: React.FC = () => {
                 )}
               </div>
 
-              {/* CONNECTED LINKS IN EDIT MODE */}
               {isEditing && (
                 <>
                   <div className="form-group">
@@ -1086,7 +828,6 @@ export const Profile: React.FC = () => {
               )}
             </div>
 
-            {/* CONNECTED ACCOUNTS VIEW */}
             {!isEditing && (
               <div style={{ marginTop: "2rem" }}>
                 <div className="sub-section-title">
@@ -1096,7 +837,6 @@ export const Profile: React.FC = () => {
                 </div>
 
                 <div className="connected-accounts-grid">
-                  {/* GITHUB CARD */}
                   <div className="account-card">
                     <div className="account-card-header">
                       <div className="account-info">
@@ -1115,15 +855,6 @@ export const Profile: React.FC = () => {
                       )}
                     </div>
                     <div className="account-actions">
-                      {isAcademicUser && (
-                        <button
-                          type="button"
-                          className="btn-github-sync"
-                          onClick={() => handleFetchGitHubRepos()}
-                        >
-                          <RefreshCw size={14} /> Sync GitHub
-                        </button>
-                      )}
                       {formData.github && (
                         <a
                           href={
@@ -1141,7 +872,6 @@ export const Profile: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* LINKEDIN CARD */}
                   <div className="account-card">
                     <div className="account-card-header">
                       <div className="account-info">
@@ -1177,7 +907,6 @@ export const Profile: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* PORTFOLIO / WEBSITE CARD */}
                   <div className="account-card">
                     <div className="account-card-header">
                       <div className="account-info">
@@ -1220,7 +949,6 @@ export const Profile: React.FC = () => {
           </div>
         )}
 
-        {/* ACADEMIC DETAILS */}
         {isAcademicUser && activeTab === "academic" && (
           <div className="tab-pane">
             <div className="card-header">
@@ -1312,7 +1040,6 @@ export const Profile: React.FC = () => {
           </div>
         )}
 
-        {/* SKILLS TAB */}
         {isAcademicUser && activeTab === "skills" && (
           <div className="tab-pane">
             <div className="card-header">
@@ -1402,7 +1129,6 @@ export const Profile: React.FC = () => {
           </div>
         )}
 
-        {/* CAREER PREFERENCES */}
         {isAcademicUser && activeTab === "preferences" && (
           <div className="tab-pane">
             <div className="card-header">
@@ -1437,7 +1163,6 @@ export const Profile: React.FC = () => {
           </div>
         )}
 
-        {/* PROJECTS & CREDENTIALS */}
         {activeTab === "projects" && (
           <div className="tab-pane">
             <div className="card-header" style={{ display: "flex", justifyContent: "space-between" }}>
@@ -1476,7 +1201,6 @@ export const Profile: React.FC = () => {
           </div>
         )}
 
-        {/* DIGITAL DOCUMENTS */}
         {activeTab === "documents" && (
           <div className="tab-pane">
             <DigitalDocumentsManager
@@ -1489,7 +1213,6 @@ export const Profile: React.FC = () => {
           </div>
         )}
 
-        {/* MODALS */}
         {showAddProjectModal && (
           <div className="github-modal-overlay">
             <div className="github-modal-card" style={{ maxWidth: "550px" }}>
