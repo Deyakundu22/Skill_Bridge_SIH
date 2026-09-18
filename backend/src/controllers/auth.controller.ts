@@ -323,7 +323,6 @@ export const getCaptcha = async (
       success: true,
       captcha: {
         id: challenge.id,
-        question: challenge.question,
         image: challenge.image,
       },
     });
