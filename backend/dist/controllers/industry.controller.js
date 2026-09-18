@@ -74,17 +74,23 @@ export const createProfile = async (req, res) => {
         if (existing && existing.length > 0) {
             res.status(409).json({
                 success: false,
-                message: "Industry profile already exists. Use PUT /api/industry/profile to update.",
+                message: "Industry profile already exists.",
             });
             return;
         }
-        const companyName = req.body.companyName || req.body.company_name || req.user?.username || "Company Name";
+        const companyName = req.body.companyName ||
+            req.body.company_name ||
+            req.user?.username ||
+            "Company Name";
         const companyType = req.body.companyType || req.body.company_type || null;
         const industrySector = req.body.industrySector || req.body.industry_sector || null;
         const description = req.body.description || null;
         const website = req.body.website || null;
         const location = req.body.location || null;
-        const contactEmail = req.body.contactEmail || req.body.contact_email || req.user?.email || null;
+        const contactEmail = req.body.contactEmail ||
+            req.body.contact_email ||
+            req.user?.email ||
+            null;
         const phone = req.body.phone || null;
         const logo = req.body.logo || null;
         await pool.query(`INSERT INTO industry_profiles 
@@ -134,13 +140,27 @@ export const updateProfile = async (req, res) => {
         // Fetch existing profile if available
         const [existingRows] = await pool.query(`SELECT * FROM industry_profiles WHERE user_id = ?`, [userId]);
         const existing = existingRows[0] || {};
-        const companyName = req.body.companyName ?? req.body.company_name ?? existing.company_name ?? req.user?.username ?? "Company Name";
-        const companyType = req.body.companyType ?? req.body.company_type ?? existing.company_type ?? null;
-        const industrySector = req.body.industrySector ?? req.body.industry_sector ?? existing.industry_sector ?? null;
+        const companyName = req.body.companyName ??
+            req.body.company_name ??
+            existing.company_name ??
+            req.user?.username ??
+            "Company Name";
+        const companyType = req.body.companyType ??
+            req.body.company_type ??
+            existing.company_type ??
+            null;
+        const industrySector = req.body.industrySector ??
+            req.body.industry_sector ??
+            existing.industry_sector ??
+            null;
         const description = req.body.description ?? existing.description ?? null;
         const website = req.body.website ?? existing.website ?? null;
         const location = req.body.location ?? existing.location ?? null;
-        const contactEmail = req.body.contactEmail ?? req.body.contact_email ?? existing.contact_email ?? req.user?.email ?? null;
+        const contactEmail = req.body.contactEmail ??
+            req.body.contact_email ??
+            existing.contact_email ??
+            req.user?.email ??
+            null;
         const phone = req.body.phone ?? existing.phone ?? null;
         const logo = req.body.logo ?? existing.logo ?? null;
         // INSERT or UPDATE without touching verification_status or rejection_reason

@@ -70,7 +70,10 @@ const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
           const result = await res.json();
           if (result && result.profile) {
             setProfileData(result.profile);
-            sessionStorage.setItem("sb_student_profile", JSON.stringify(result));
+            sessionStorage.setItem(
+              "sb_student_profile",
+              JSON.stringify(result),
+            );
           }
         }
       } catch (err) {
@@ -112,8 +115,7 @@ const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
 
   const isHomeActive =
     location.pathname === "/dashboard" || location.pathname === "/";
-  const isDetailsActive =
-    location.pathname === "/student/details";
+  const isDetailsActive = location.pathname === "/student/details";
   const isIndustryActive = location.pathname === "/industry/profile";
   const isIndustryOppActive = location.pathname === "/industry/opportunities";
   const isIndustryQuestionsActive = location.pathname === "/industry/questions";
@@ -129,11 +131,12 @@ const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
   const isSavedActive = location.pathname === "/student/saved";
   const isLearningActive = location.pathname === "/student/learning";
   const isExperiencesActive =
-    location.pathname === "/student/experiences" || location.pathname === "/experiences";
+    location.pathname === "/student/experiences" ||
+    location.pathname === "/experiences";
 
   // Calculate 2-letter initials from name, stripping titles (Dr., Prof., Mr., etc.)
   const getInitials = (name?: string): string => {
-    if (!name || !name.trim()) return "SB";
+    if (!name || !name.trim()) return "{NA}";
     const titles = new Set([
       "dr",
       "dr.",
@@ -159,7 +162,7 @@ const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
 
     if (parts.length === 0) {
       const raw = name.replace(/[^a-zA-Z]/g, "");
-      return raw.substring(0, 2).toUpperCase() || "SB";
+      return raw.substring(0, 2).toUpperCase() || "{NA}";
     }
 
     if (parts.length === 1) {
@@ -229,8 +232,15 @@ const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
       <aside className={`sidebar custom-scrollbar ${isOpen ? "open" : ""}`}>
         {/* Mobile Header */}
         <div className="sidebar-header-mobile">
-          <div className="logo cursor-pointer" onClick={() => handleNavigation("/dashboard")}>
-            <img src="/logo.jpeg" alt="SkillBridge Logo" className="logo-icon object-cover" />
+          <div
+            className="logo cursor-pointer"
+            onClick={() => handleNavigation("/dashboard")}
+          >
+            <img
+              src="/logo.jpeg"
+              alt="SkillBridge Logo"
+              className="logo-icon object-cover"
+            />
             <strong>SkillBridge</strong>
           </div>
 
@@ -356,7 +366,7 @@ const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
                 style={{ cursor: "pointer" }}
               >
                 <SideItem
-                  icon={<Handshake />}
+                  icon={<ClipboardCheck />}
                   text="Academia Collaborations"
                   active={isCollabActive}
                   badge="Initiatives"
@@ -486,7 +496,11 @@ const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
                 onClick={() => handleNavigation("/student/saved")}
                 style={{ cursor: "pointer" }}
               >
-                <SideItem icon={<Bookmark />} text="Saved" active={isSavedActive} />
+                <SideItem
+                  icon={<Bookmark />}
+                  text="Saved"
+                  active={isSavedActive}
+                />
               </div>
               <div
                 onClick={() =>

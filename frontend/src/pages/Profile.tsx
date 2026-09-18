@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   Globe,
   Code,
-  ShieldCheck,
   Calendar,
   BookOpen,
   Target,
@@ -24,9 +23,8 @@ import {
   Plus,
   Trash2,
   ExternalLink,
+  RefreshCw,
   X,
-  Building,
-  ShieldAlert,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
@@ -34,6 +32,7 @@ import { useSearchParams } from "react-router-dom";
 import { SkillAssessment } from "../components/student/SkillAssessment";
 import type {
   ProfileApiResponse,
+  StudentProfileData,
   Institution,
   MasterSkill,
 } from "../types/profile";
@@ -50,61 +49,88 @@ type Tab =
   | "projects"
   | "documents";
 
-export const Profile: React.FC = () => {
+const Profile: React.FC = () => {
   const { token, user } = useAuth();
   const [searchParams] = useSearchParams();
 
-  const rawRole = (user?.role || "student").toLowerCase();
-  const isAcademicUser = rawRole === "student" || rawRole === "faculty";
+  const role = user?.role ? user.role.toString().toLowerCase() : "student";
+  const isAcademicProfileRole = ["student", "faculty", "academician"].includes(
+    role,
+  );
 
   const initialTab = (searchParams.get("tab") as Tab) || "personal";
   const [activeTab, setActiveTab] = useState<Tab>(
-    ["personal", "academic", "skills", "preferences", "projects", "documents"].includes(initialTab)
+    [
+      "personal",
+      "academic",
+      "skills",
+      "preferences",
+      "projects",
+      "documents",
+    ].includes(initialTab)
       ? initialTab
-      : "personal"
+      : "personal",
   );
 
+  // Sync tab state when URL query search parameters change
   useEffect(() => {
     const tabParam = searchParams.get("tab") as Tab;
     if (
       tabParam &&
-      ["personal", "academic", "skills", "preferences", "projects", "documents"].includes(tabParam)
+      [
+        "personal",
+        "academic",
+        "skills",
+        "preferences",
+        "projects",
+        "documents",
+      ].includes(tabParam)
     ) {
-      if (!isAcademicUser && ["academic", "skills", "preferences"].includes(tabParam)) {
-        setActiveTab("personal");
-      } else {
-        setActiveTab(tabParam);
-      }
+      setActiveTab(tabParam);
     }
-  }, [searchParams, isAcademicUser]);
+  }, [searchParams]);
 
   const [isEditing, setIsEditing] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
 
   const [data, setData] = useState<ProfileApiResponse | null>(null);
-  const [formData, setFormData] = useState<any>(null);
+  const [formData, setFormData] = useState<StudentProfileData | null>(null);
   const [targetRolesInput, setTargetRolesInput] = useState<string>("");
+  const [preferredLocationsInput, setPreferredLocationsInput] =
+    useState<string>("");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
 
-  // Skills state
+  // Skills section state
   const [masterSkills, setMasterSkills] = useState<MasterSkill[]>([]);
   const [selectedSkillId, setSelectedSkillId] = useState<number | "">("");
   const [skillAddLoading, setSkillAddLoading] = useState(false);
-  const [skillActionMessage, setSkillActionMessage] = useState<string | null>(null);
+  const [skillActionMessage, setSkillActionMessage] = useState<string | null>(
+    null,
+  );
   const [skillActionError, setSkillActionError] = useState<string | null>(null);
 
-  // Assessment modal state
+  // Active Assessment state
   const [activeAssessmentSkill, setActiveAssessmentSkill] = useState<{
     skillId: number;
     skillName: string;
     skillCategory?: string;
   } | null>(null);
 
-  // Add Project modal state
+  // GitHub Repo Sync & Modal State
+  const [githubSyncLoading, setGithubSyncLoading] = useState(false);
+  const [githubSyncError, setGithubSyncError] = useState<string | null>(null);
+  const [githubSyncRepos, setGithubSyncRepos] = useState<any[]>([]);
+  const [githubSyncUsername, setGithubSyncUsername] = useState<string>("");
+  const [showGitHubModal, setShowGitHubModal] = useState(false);
+  const [selectedRepoIds, setSelectedRepoIds] = useState<number[]>([]);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importSuccessMsg, setImportSuccessMsg] = useState<string | null>(null);
+
+  // Add Project Modal State
   const [showAddProjectModal, setShowAddProjectModal] = useState(false);
   const [newProjData, setNewProjData] = useState({
     title: "",
@@ -115,38 +141,126 @@ export const Profile: React.FC = () => {
     status: "Completed",
   });
   const [addProjLoading, setAddProjLoading] = useState(false);
+  const [addProjError, setAddProjError] = useState<string | null>(null);
 
+  // Add Certification Modal State
+  const [showAddCertModal, setShowAddCertModal] = useState(false);
+  const [newCertData, setNewCertData] = useState({
+    title: "",
+    issuer: "",
+    issueYear: new Date().getFullYear().toString(),
+    credentialUrl: "",
+  });
+  const [addCertLoading, setAddCertLoading] = useState(false);
+  const [addCertError, setAddCertError] = useState<string | null>(null);
+
+  // Fetch master institutions & master skills on load
   useEffect(() => {
-    if (isAcademicUser) {
-      fetch(`${API_BASE_URL}/student/institutions`)
-        .then((res) => res.json())
-        .then((resData) => setInstitutions(Array.isArray(resData) ? resData : []))
-        .catch(() => setInstitutions([]));
+    fetch(`${API_BASE_URL}/student/institutions`)
+      .then((res) => res.json())
+      .then((data) => setInstitutions(Array.isArray(data) ? data : []))
+      .catch(() => setInstitutions([]));
 
-      fetch(`${API_BASE_URL}/skills`)
-        .then((res) => res.json())
-        .then((resData) => setMasterSkills(Array.isArray(resData) ? resData : []))
-        .catch((err) => console.error("Error fetching master skills:", err));
-    }
-  }, [isAcademicUser]);
+    fetch(`${API_BASE_URL}/skills`)
+      .then((res) => res.json())
+      .then((data) => setMasterSkills(Array.isArray(data) ? data : []))
+      .catch((err) => console.error("Error fetching master skills:", err));
+  }, []);
 
+  /*
+   * ============================================================
+   * GET PROFILE
+   * ============================================================
+   */
   const fetchProfile = useCallback(
     async (forceRefresh = false) => {
       try {
-        const cacheKey = `sb_profile_${rawRole}`;
+        const authToken = token || localStorage.getItem("skillbridge_token");
+
+        if (!authToken) {
+          throw new Error(
+            "No authentication token found. Please sign in again.",
+          );
+        }
+
+        if (!isAcademicProfileRole) {
+          const response = await fetch(`${API_BASE_URL}/auth/me`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            throw new Error(
+              errorData?.message ||
+                `Failed to load profile. Server returned ${response.status}.`,
+            );
+          }
+
+          const result = await response.json();
+          const genericProfile = {
+            name: result?.user?.name || "",
+            username: result?.user?.username || "",
+            email: result?.user?.email || "",
+            phone: result?.company_profile?.phone || "",
+            location: result?.company_profile?.location || "",
+            bio: result?.company_profile?.description || "",
+            github: result?.company_profile?.github || "",
+            linkedin: result?.company_profile?.linkedin || "",
+            website:
+              result?.company_profile?.website || result?.user?.website || "",
+            portfolio:
+              result?.company_profile?.website || result?.user?.website || "",
+            verification_status:
+              result?.company_profile?.verification_status ||
+              result?.student_profile?.verification_status ||
+              result?.user?.institution_verification_status ||
+              "",
+            preferred_locations: [],
+            target_roles: [],
+          } as StudentProfileData;
+
+          setData({
+            profile: genericProfile,
+            skills: [],
+            projects: [],
+            certifications: [],
+          });
+          setFormData(genericProfile);
+          setTargetRolesInput("");
+          setPreferredLocationsInput("");
+          setError(null);
+          setLoading(false);
+          return;
+        }
+
         if (!forceRefresh) {
-          const cached = sessionStorage.getItem(cacheKey);
+          const cached = sessionStorage.getItem("sb_student_profile");
           if (cached) {
             try {
-              const parsed = JSON.parse(cached);
-              const profileObj = parsed?.profile || parsed?.user || parsed;
-              if (profileObj) {
+              const parsed: ProfileApiResponse = JSON.parse(cached);
+              if (parsed && parsed.profile) {
                 setData(parsed);
-                const rolesArray = Array.isArray(profileObj.target_roles)
-                  ? [...profileObj.target_roles]
+                const rolesArray = Array.isArray(parsed.profile.target_roles)
+                  ? [...parsed.profile.target_roles]
                   : [];
-                setFormData({ ...profileObj, target_roles: rolesArray });
+                const locationsArray = Array.isArray(
+                  parsed.profile.preferred_locations,
+                )
+                  ? [...parsed.profile.preferred_locations]
+                  : [];
+
+                setFormData({
+                  ...parsed.profile,
+                  target_roles: rolesArray,
+                  preferred_locations: locationsArray,
+                });
+
                 setTargetRolesInput(rolesArray.join(", "));
+                setPreferredLocationsInput(locationsArray.join(", "));
                 setError(null);
                 setLoading(false);
                 return;
@@ -155,14 +269,7 @@ export const Profile: React.FC = () => {
           }
         }
 
-        const authToken = token || localStorage.getItem("skillbridge_token");
-        if (!authToken) throw new Error("No authentication token found. Please sign in again.");
-
-        const endpoint = isAcademicUser
-          ? `${API_BASE_URL}/student/profile`
-          : `${API_BASE_URL}/${rawRole}/profile`;
-
-        const response = await fetch(endpoint, {
+        const response = await fetch(`${API_BASE_URL}/student/profile`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${authToken}`,
@@ -172,54 +279,127 @@ export const Profile: React.FC = () => {
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => null);
-          throw new Error(errorData?.error || `Failed to load profile. Server returned ${response.status}.`);
+
+          throw new Error(
+            errorData?.error ||
+              `Failed to load profile. Server returned ${response.status}.`,
+          );
         }
 
-        const result = await response.json();
-        const profileObj = result.profile || result.user || result;
+        const result: ProfileApiResponse = await response.json();
 
-        sessionStorage.setItem(cacheKey, JSON.stringify(result));
+        if (!result || !result.profile) {
+          throw new Error("Invalid profile response received from server.");
+        }
+
+        sessionStorage.setItem("sb_student_profile", JSON.stringify(result));
         setData(result);
 
-        const rolesArray = Array.isArray(profileObj.target_roles)
-          ? [...profileObj.target_roles]
+        const rolesArray = Array.isArray(result.profile.target_roles)
+          ? [...result.profile.target_roles]
+          : [];
+        const locationsArray = Array.isArray(result.profile.preferred_locations)
+          ? [...result.profile.preferred_locations]
           : [];
 
         setFormData({
-          ...profileObj,
-          name: profileObj.name || profileObj.username || profileObj.company_name || user?.name || "",
+          ...result.profile,
           target_roles: rolesArray,
+          preferred_locations: locationsArray,
         });
 
         setTargetRolesInput(rolesArray.join(", "));
+        setPreferredLocationsInput(locationsArray.join(", "));
+
         setError(null);
       } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : "Failed to load profile.");
+        setError(
+          err instanceof Error ? err.message : "Failed to load profile.",
+        );
       } finally {
         setLoading(false);
       }
     },
-    [token, rawRole, isAcademicUser, user]
+    [isAcademicProfileRole, token],
   );
 
+  /*
+   * ============================================================
+   * INITIAL FETCH
+   * ============================================================
+   */
   useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
+    const authToken = token || localStorage.getItem("skillbridge_token");
 
+    if (!authToken) {
+      setLoading(false);
+      setError("No authentication token found. Please sign in.");
+      return;
+    }
+
+    fetchProfile();
+  }, [fetchProfile, token]);
+
+  /*
+   * ============================================================
+   * FORM INPUT HANDLER
+   * ============================================================
+   */
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) => {
     const { name, value } = e.target;
-    setFormData((previous: any) => ({
-      ...previous,
-      [name]: value,
-    }));
+
+    setFormData((previous) => {
+      if (!previous) return previous;
+
+      return {
+        ...previous,
+        [name]: value,
+      };
+    });
   };
 
+  /*
+   * ============================================================
+   * NUMBER FIELD HANDLER
+   * ============================================================
+   */
+  const handleNumberChange = (
+    field: "expected_stipend_min" | "expected_stipend_max",
+    value: string,
+  ) => {
+    setFormData((previous) => {
+      if (!previous) return previous;
+
+      return {
+        ...previous,
+        [field]: value === "" ? null : Number(value),
+      };
+    });
+  };
+
+  /*
+   * ============================================================
+   * SAVE PROFILE
+   * ============================================================
+   */
   const handleSave = async () => {
     if (!formData) return;
 
+    if (!isAcademicProfileRole) {
+      setIsEditing(false);
+      setSaveSuccess(true);
+      window.setTimeout(() => {
+        setSaveSuccess(false);
+      }, 3000);
+      return;
+    }
+
     const authToken = token || localStorage.getItem("skillbridge_token");
+
     if (!authToken) {
       setError("Authentication token missing. Please sign in again.");
       return;
@@ -230,11 +410,7 @@ export const Profile: React.FC = () => {
     setSaveSuccess(false);
 
     try {
-      const endpoint = isAcademicUser
-        ? `${API_BASE_URL}/student/profile`
-        : `${API_BASE_URL}/${rawRole}/profile`;
-
-      const response = await fetch(endpoint, {
+      const response = await fetch(`${API_BASE_URL}/student/profile`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${authToken}`,
@@ -245,7 +421,11 @@ export const Profile: React.FC = () => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.error || `Failed to save profile. Server returned ${response.status}.`);
+
+        throw new Error(
+          errorData?.error ||
+            `Failed to save profile. Server returned ${response.status}.`,
+        );
       }
 
       await fetchProfile(true);
@@ -253,7 +433,10 @@ export const Profile: React.FC = () => {
 
       setIsEditing(false);
       setSaveSuccess(true);
-      window.setTimeout(() => setSaveSuccess(false), 3000);
+
+      window.setTimeout(() => {
+        setSaveSuccess(false);
+      }, 3000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to save profile.");
     } finally {
@@ -262,36 +445,47 @@ export const Profile: React.FC = () => {
   };
 
   const handleCancelEdit = () => {
-    const profileObj = data?.profile || (data as any)?.user || data;
-    if (!profileObj) {
+    if (!data?.profile) {
       setIsEditing(false);
       return;
     }
 
-    const rolesArray = Array.isArray(profileObj.target_roles)
-      ? [...profileObj.target_roles]
+    const rolesArray = Array.isArray(data.profile.target_roles)
+      ? [...data.profile.target_roles]
+      : [];
+    const locationsArray = Array.isArray(data.profile.preferred_locations)
+      ? [...data.profile.preferred_locations]
       : [];
 
     setFormData({
-      ...profileObj,
-      name: profileObj.name || profileObj.username || profileObj.company_name || "",
+      ...data.profile,
       target_roles: rolesArray,
+      preferred_locations: locationsArray,
     });
 
     setTargetRolesInput(rolesArray.join(", "));
+    setPreferredLocationsInput(locationsArray.join(", "));
     setIsEditing(false);
   };
 
-  const selectedMasterSkill = masterSkills.find((s) => s.id === Number(selectedSkillId));
+  /*
+   * ============================================================
+   * SKILLS ACTIONS HANDLERS
+   * ============================================================
+   */
+  const selectedMasterSkill = masterSkills.find(
+    (s) => s.id === Number(selectedSkillId),
+  );
   const autoCategory = selectedMasterSkill ? selectedMasterSkill.category : "";
 
   const isSkillAlreadyAdded = Boolean(
     selectedSkillId &&
-      data?.skills?.some(
-        (s) =>
-          s.skill_id === Number(selectedSkillId) ||
-          (selectedMasterSkill && s.name.toLowerCase() === selectedMasterSkill.name.toLowerCase())
-      )
+    data?.skills?.some(
+      (s) =>
+        s.skill_id === Number(selectedSkillId) ||
+        (selectedMasterSkill &&
+          s.name.toLowerCase() === selectedMasterSkill.name.toLowerCase()),
+    ),
   );
 
   const handleAddSkill = async (e: React.FormEvent) => {
@@ -319,9 +513,14 @@ export const Profile: React.FC = () => {
       });
 
       const resData = await res.json();
-      if (!res.ok) throw new Error(resData.error || "Failed to add skill.");
 
-      setSkillActionMessage(`Skill "${selectedMasterSkill?.name}" added successfully!`);
+      if (!res.ok) {
+        throw new Error(resData.error || "Failed to add skill.");
+      }
+
+      setSkillActionMessage(
+        `Skill "${selectedMasterSkill?.name}" added successfully!`,
+      );
       setSelectedSkillId("");
       await fetchProfile(true);
       window.dispatchEvent(new Event("profileUpdated"));
@@ -332,7 +531,10 @@ export const Profile: React.FC = () => {
     }
   };
 
-  const handleDeleteSkill = async (skillRecordId: number, skillName: string) => {
+  const handleDeleteSkill = async (
+    skillRecordId: number,
+    skillName: string,
+  ) => {
     const authToken = token || localStorage.getItem("skillbridge_token");
     if (!authToken) return;
 
@@ -340,13 +542,16 @@ export const Profile: React.FC = () => {
     setSkillActionMessage(null);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/student/skills/${skillRecordId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-          "Content-Type": "application/json",
+      const res = await fetch(
+        `${API_BASE_URL}/student/skills/${skillRecordId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
         },
-      });
+      );
 
       if (!res.ok) {
         const resData = await res.json();
@@ -361,11 +566,116 @@ export const Profile: React.FC = () => {
     }
   };
 
+  /*
+   * ============================================================
+   * GITHUB REPO SYNC & IMPORT HANDLERS
+   * ============================================================
+   */
+  const handleFetchGitHubRepos = async (customUsername?: string) => {
+    const usernameToSync = customUsername || formData?.github || "";
+    if (!usernameToSync) {
+      setGithubSyncError(
+        "Please enter a valid GitHub username or profile URL first.",
+      );
+      setShowGitHubModal(true);
+      return;
+    }
+
+    setGithubSyncLoading(true);
+    setGithubSyncError(null);
+    setShowGitHubModal(true);
+
+    try {
+      const authToken = token || localStorage.getItem("skillbridge_token");
+      const res = await fetch(`${API_BASE_URL}/student/profile/github-repos`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username: usernameToSync }),
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        throw new Error(
+          resData.error || "Failed to fetch GitHub repositories.",
+        );
+      }
+
+      setGithubSyncUsername(resData.username);
+      setGithubSyncRepos(resData.repos || []);
+      setSelectedRepoIds((resData.repos || []).map((r: any) => r.id));
+    } catch (err: any) {
+      setGithubSyncError(err.message || "Error connecting to GitHub API.");
+    } finally {
+      setGithubSyncLoading(false);
+    }
+  };
+
+  const toggleRepoSelection = (id: number) => {
+    setSelectedRepoIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
+  };
+
+  const handleImportSelectedRepos = async () => {
+    const selectedRepos = githubSyncRepos.filter((r) =>
+      selectedRepoIds.includes(r.id),
+    );
+    if (selectedRepos.length === 0) {
+      setGithubSyncError("Please select at least one repository to import.");
+      return;
+    }
+
+    setImportLoading(true);
+    setGithubSyncError(null);
+
+    try {
+      const authToken = token || localStorage.getItem("skillbridge_token");
+      const res = await fetch(
+        `${API_BASE_URL}/student/profile/import-github-projects`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ repos: selectedRepos }),
+        },
+      );
+
+      const resData = await res.json();
+      if (!res.ok) {
+        throw new Error(resData.error || "Failed to import GitHub projects.");
+      }
+
+      setImportSuccessMsg(
+        resData.message || "GitHub projects successfully imported!",
+      );
+      await fetchProfile(true);
+      window.dispatchEvent(new Event("profileUpdated"));
+
+      setTimeout(() => {
+        setShowGitHubModal(false);
+        setImportSuccessMsg(null);
+      }, 1500);
+    } catch (err: any) {
+      setGithubSyncError(err.message || "Import failed.");
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
   const handleAddProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newProjData.title) return;
+    if (!newProjData.title) {
+      setAddProjError("Project title is required.");
+      return;
+    }
 
     setAddProjLoading(true);
+    setAddProjError(null);
 
     try {
       const authToken = token || localStorage.getItem("skillbridge_token");
@@ -379,7 +689,9 @@ export const Profile: React.FC = () => {
       });
 
       const resData = await res.json();
-      if (!res.ok) throw new Error(resData.error || "Failed to add project.");
+      if (!res.ok) {
+        throw new Error(resData.error || "Failed to add project.");
+      }
 
       setNewProjData({
         title: "",
@@ -393,7 +705,7 @@ export const Profile: React.FC = () => {
       await fetchProfile(true);
       window.dispatchEvent(new Event("profileUpdated"));
     } catch (err: any) {
-      alert(err.message || "Error creating project.");
+      setAddProjError(err.message || "Error creating project.");
     } finally {
       setAddProjLoading(false);
     }
@@ -404,10 +716,15 @@ export const Profile: React.FC = () => {
     if (!authToken) return;
 
     try {
-      const res = await fetch(`${API_BASE_URL}/student/profile/projects/${projectId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${authToken}` },
-      });
+      const res = await fetch(
+        `${API_BASE_URL}/student/profile/projects/${projectId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        },
+      );
 
       if (!res.ok) {
         const resData = await res.json();
@@ -421,21 +738,111 @@ export const Profile: React.FC = () => {
     }
   };
 
+  const handleAddCert = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCertData.title || !newCertData.issuer) {
+      setAddCertError(
+        "Certification Title and Issuing Organization are required.",
+      );
+      return;
+    }
+
+    setAddCertLoading(true);
+    setAddCertError(null);
+
+    try {
+      const authToken = token || localStorage.getItem("skillbridge_token");
+      const res = await fetch(
+        `${API_BASE_URL}/student/experiences/certifications`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: newCertData.title,
+            issuer: newCertData.issuer,
+            issueYear: newCertData.issueYear,
+            credentialUrl: newCertData.credentialUrl,
+          }),
+        },
+      );
+
+      const resData = await res.json();
+      if (!res.ok) {
+        throw new Error(
+          resData.message || resData.error || "Failed to add certification.",
+        );
+      }
+
+      setNewCertData({
+        title: "",
+        issuer: "",
+        issueYear: new Date().getFullYear().toString(),
+        credentialUrl: "",
+      });
+      setShowAddCertModal(false);
+      await fetchProfile(true);
+      window.dispatchEvent(new Event("profileUpdated"));
+    } catch (err: any) {
+      setAddCertError(err.message || "Error creating certification.");
+    } finally {
+      setAddCertLoading(false);
+    }
+  };
+
+  const handleDeleteCert = async (certId: number) => {
+    if (!window.confirm("Are you sure you want to delete this certification?"))
+      return;
+    const authToken = token || localStorage.getItem("skillbridge_token");
+    if (!authToken) return;
+
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/student/experiences/certifications/${certId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        },
+      );
+
+      if (!res.ok) {
+        const resData = await res.json();
+        throw new Error(
+          resData.message || resData.error || "Failed to delete certification.",
+        );
+      }
+
+      await fetchProfile(true);
+      window.dispatchEvent(new Event("profileUpdated"));
+    } catch (err: any) {
+      alert(err.message || "Error deleting certification.");
+    }
+  };
+
+  /*
+   * ============================================================
+   * LOADING AND ERROR STATES
+   * ============================================================
+   */
   if (loading) {
     return (
       <div className="profile-loading-screen">
         <Loader2 className="spin-icon" size={36} />
-        <p>Loading profile details...</p>
+        <p>Loading your profile details from database...</p>
       </div>
     );
   }
 
-  if (error || !formData) {
+  if (error || !data || !formData) {
     return (
       <div className="profile-error-screen">
         <AlertCircle size={44} color="#ef4444" />
         <h2>Failed to Load Profile</h2>
-        <p>{error || "No profile data found in database."}</p>
+        <p>{error || "No student profile data found in database."}</p>
         <button onClick={() => fetchProfile()} className="retry-btn">
           Retry Loading
         </button>
@@ -444,26 +851,118 @@ export const Profile: React.FC = () => {
   }
 
   const getInitials = (name?: string): string => {
-    if (!name || !name.trim()) return rawRole.substring(0, 2).toUpperCase();
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    if (!name || !name.trim()) return "ST";
+    const titles = new Set([
+      "dr",
+      "dr.",
+      "mr",
+      "mr.",
+      "mrs",
+      "mrs.",
+      "ms",
+      "ms.",
+      "prof",
+      "prof.",
+      "er",
+      "er.",
+      "shri",
+      "smt",
+      "sir",
+      "madam",
+    ]);
+    const parts = name
+      .trim()
+      .split(/\s+/)
+      .filter((part) => !titles.has(part.toLowerCase()));
+
+    if (parts.length === 0) {
+      const raw = name.replace(/[^a-zA-Z]/g, "");
+      return raw.substring(0, 2).toUpperCase() || "ST";
+    }
+
+    if (parts.length === 1) {
+      return parts[0].substring(0, 2).toUpperCase();
+    }
+
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
 
-  const displayName = formData.name || formData.username || formData.company_name || user?.name || "User";
-  const initials = getInitials(displayName);
+  const initials = getInitials(
+    formData.name || formData.username || user?.name || "",
+  );
+  const displayName =
+    formData.name || formData.username || user?.name || "User";
+  const profileVerificationStatus = (formData.verification_status || "")
+    .toString()
+    .trim()
+    .toLowerCase();
+  const profileVerificationLabel =
+    profileVerificationStatus === "approved" ||
+    profileVerificationStatus === "verified"
+      ? "Verified"
+      : profileVerificationStatus === "pending"
+        ? "Pending Review"
+        : profileVerificationStatus === "rejected"
+          ? "Rejected"
+          : profileVerificationStatus === "fake"
+            ? "Flagged"
+            : profileVerificationStatus === "unverified"
+              ? "Unverified"
+              : "Profile Active";
+  const profileVerificationStyle =
+    profileVerificationStatus === "approved" ||
+    profileVerificationStatus === "verified"
+      ? {
+          background: "rgba(34, 197, 94, 0.14)",
+          color: "#16a34a",
+          borderColor: "rgba(34, 197, 94, 0.35)",
+        }
+      : profileVerificationStatus === "pending"
+        ? {
+            background: "rgba(250, 204, 21, 0.15)",
+            color: "#b45309",
+            borderColor: "rgba(250, 204, 21, 0.32)",
+          }
+        : profileVerificationStatus === "rejected"
+          ? {
+              background: "rgba(239, 68, 68, 0.12)",
+              color: "#dc2626",
+              borderColor: "rgba(239, 68, 68, 0.28)",
+            }
+          : profileVerificationStatus === "fake" ||
+              profileVerificationStatus === "unverified"
+            ? {
+                background: "rgba(251, 146, 60, 0.12)",
+                color: "#ea580c",
+                borderColor: "rgba(251, 146, 60, 0.28)",
+              }
+            : {
+                background: "rgba(59, 130, 246, 0.12)",
+                color: "#2563eb",
+                borderColor: "rgba(59, 130, 246, 0.28)",
+              };
+  const profileSubtitle = isAcademicProfileRole
+    ? [formData.degree, formData.department].filter(Boolean).join(" • ") ||
+      "Program details pending"
+    : role === "industry"
+      ? "Industry Account"
+      : role === "admin"
+        ? "Administrator Account"
+        : "Institution Account";
 
   return (
     <div className="profile-page-wrapper">
       {saveSuccess && (
         <div className="toast-notification success">
-          <Check size={18} /> Profile changes successfully updated!
+          <Check size={18} />
+          Profile changes successfully updated in database!
         </div>
       )}
 
-      {/* COVER CARD */}
+      {/* HEADER / COVER CARD */}
       <div className="profile-cover-card">
         <div className="cover-bg" />
+
         <div className="cover-content">
           <div className="avatar-section">
             <div className="main-avatar">{initials}</div>
@@ -472,40 +971,36 @@ export const Profile: React.FC = () => {
           <div className="identity-section">
             <div className="name-row">
               <h1>{displayName}</h1>
-              <span className="verified-badge">
-                <ShieldCheck size={16} />
-                Verified {rawRole.charAt(0).toUpperCase() + rawRole.slice(1)}
+
+              <span className="verified-badge" style={profileVerificationStyle}>
+                {profileVerificationLabel}
               </span>
             </div>
 
             <p className="subtitle">
-              {isAcademicUser ? (
-                <>
-                  {[formData.degree, formData.department].filter(Boolean).join(" • ") ||
-                    "Program details pending"}
-                  {formData.institution ? ` at ${formData.institution}` : ""}
-                </>
-              ) : (
-                formData.organization_type ||
-                formData.industry_sector ||
-                `${rawRole.toUpperCase()} Account`
-              )}
+              {profileSubtitle}
+              {isAcademicProfileRole && formData.institution
+                ? ` at ${formData.institution}`
+                : ""}
             </p>
 
             <div className="quick-contacts">
               {formData.email && (
                 <span>
-                  <Mail size={14} /> {formData.email}
+                  <Mail size={14} />
+                  {formData.email}
                 </span>
               )}
               {formData.phone && (
                 <span>
-                  <Phone size={14} /> {formData.phone}
+                  <Phone size={14} />
+                  {formData.phone}
                 </span>
               )}
               {formData.location && (
                 <span>
-                  <MapPin size={14} /> {formData.location}
+                  <MapPin size={14} />
+                  {formData.location}
                 </span>
               )}
             </div>
@@ -513,8 +1008,12 @@ export const Profile: React.FC = () => {
 
           <div className="action-buttons">
             {!isEditing ? (
-              <button className="btn-primary" onClick={() => setIsEditing(true)}>
-                <Edit3 size={16} /> Edit Details
+              <button
+                className="btn-primary"
+                onClick={() => setIsEditing(true)}
+              >
+                <Edit3 size={16} />
+                Edit Details
               </button>
             ) : (
               <>
@@ -525,8 +1024,17 @@ export const Profile: React.FC = () => {
                 >
                   Cancel
                 </button>
-                <button className="btn-save" onClick={handleSave} disabled={saveLoading}>
-                  {saveLoading ? <Loader2 size={16} className="spin-icon" /> : <Save size={16} />}
+
+                <button
+                  className="btn-save"
+                  onClick={handleSave}
+                  disabled={saveLoading}
+                >
+                  {saveLoading ? (
+                    <Loader2 size={16} className="spin-icon" />
+                  ) : (
+                    <Save size={16} />
+                  )}
                   Save Changes
                 </button>
               </>
@@ -536,91 +1044,73 @@ export const Profile: React.FC = () => {
       </div>
 
       {/* METRIC STATS */}
-      <div className="profile-stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon purple">
-            <Sparkles size={20} />
+      {isAcademicProfileRole ? (
+        <div className="profile-stats-grid">
+          <div className="stat-card">
+            <div className="stat-icon purple">
+              <Sparkles size={20} />
+            </div>
+
+            <div>
+              <div className="stat-label">Profile Strength</div>
+
+              <div className="stat-value">
+                {data.skills?.length ? "78%" : "43%"}
+              </div>
+
+              <small className="stat-sub">Based on profile data</small>
+            </div>
           </div>
-          <div>
-            <div className="stat-label">Profile Status</div>
-            <div className="stat-value">Active</div>
-            <small className="stat-sub">Role: {rawRole.toUpperCase()}</small>
+
+          <div className="stat-card">
+            <div className="stat-icon blue">
+              <GraduationCap size={20} />
+            </div>
+
+            <div>
+              <div className="stat-label">Academic CGPA</div>
+
+              <div className="stat-value">
+                {formData.cgpa !== null &&
+                formData.cgpa !== undefined &&
+                String(formData.cgpa).trim() !== ""
+                  ? Number(formData.cgpa).toFixed(2)
+                  : "N/A"}
+              </div>
+
+              <small className="stat-sub">Out of 10</small>
+            </div>
           </div>
-        </div>
 
-        {isAcademicUser ? (
-          <>
-            <div className="stat-card">
-              <div className="stat-icon blue">
-                <GraduationCap size={20} />
-              </div>
-              <div>
-                <div className="stat-label">Academic CGPA</div>
-                <div className="stat-value">
-                  {formData.cgpa !== null &&
-                  formData.cgpa !== undefined &&
-                  String(formData.cgpa).trim() !== ""
-                    ? Number(formData.cgpa).toFixed(2)
-                    : "N/A"}
-                </div>
-                <small className="stat-sub">Out of 10</small>
-              </div>
+          <div className="stat-card">
+            <div className="stat-icon green">
+              <Award size={20} />
             </div>
 
-            <div className="stat-card">
-              <div className="stat-icon green">
-                <Award size={20} />
-              </div>
-              <div>
-                <div className="stat-label">Verified Skills</div>
-                <div className="stat-value">{data?.skills?.length || 0}</div>
-                <small className="stat-sub">Database records</small>
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="stat-card">
-              <div className="stat-icon blue">
-                <Building size={20} />
-              </div>
-              <div>
-                <div className="stat-label">Verification ID</div>
-                <div className="stat-value" style={{ fontSize: "1.1rem" }}>
-                  {formData.verification_id || "VERIFIED"}
-                </div>
-                <small className="stat-sub">Official Partner</small>
-              </div>
-            </div>
+            <div>
+              <div className="stat-label">Verified Skills</div>
 
-            <div className="stat-card">
-              <div className="stat-icon green">
-                <ShieldAlert size={20} />
-              </div>
-              <div>
-                <div className="stat-label">Linked Profiles</div>
-                <div className="stat-value">
-                  {[formData.github, formData.linkedin, formData.portfolio, formData.website].filter(
-                    Boolean
-                  ).length}
-                </div>
-                <small className="stat-sub">Connected URL(s)</small>
-              </div>
-            </div>
-          </>
-        )}
+              <div className="stat-value">{data.skills?.length || 0}</div>
 
-        <div className="stat-card">
-          <div className="stat-icon amber">
-            <FileText size={20} />
+              <small className="stat-sub">Database records</small>
+            </div>
           </div>
-          <div>
-            <div className="stat-label">Projects / Uploads</div>
-            <div className="stat-value">{data?.projects?.length || 0}</div>
-            <small className="stat-sub">Database records</small>
+
+          <div className="stat-card">
+            <div className="stat-icon amber">
+              <FileText size={20} />
+            </div>
+
+            <div>
+              <div className="stat-label">Projects</div>
+
+              <div className="stat-value">{data.projects?.length || 0}</div>
+
+              <small className="stat-sub">Database records</small>
+            </div>
           </div>
         </div>
-      </div>
+      ) : null}
 
       {/* NAVIGATION TABS */}
       <div className="profile-tabs">
@@ -628,98 +1118,109 @@ export const Profile: React.FC = () => {
           className={activeTab === "personal" ? "active" : ""}
           onClick={() => setActiveTab("personal")}
         >
-          <User size={16} /> Personal & Contact Info
+          <User size={16} />
+          Personal Info
         </button>
 
-        {isAcademicUser && (
-          <>
-            <button
-              className={activeTab === "academic" ? "active" : ""}
-              onClick={() => setActiveTab("academic")}
-            >
-              <GraduationCap size={16} /> Academic Details
-            </button>
+        {isAcademicProfileRole && (
+          <button
+            className={activeTab === "academic" ? "active" : ""}
+            onClick={() => setActiveTab("academic")}
+          >
+            <GraduationCap size={16} />
+            Academic Details
+          </button>
+        )}
 
-            <button
-              className={activeTab === "skills" ? "active" : ""}
-              onClick={() => setActiveTab("skills")}
-            >
-              <Award size={16} /> Skill Matrix
-            </button>
+        {isAcademicProfileRole && (
+          <button
+            className={activeTab === "skills" ? "active" : ""}
+            onClick={() => setActiveTab("skills")}
+          >
+            <Award size={16} />
+            Skill Matrix & Badges
+          </button>
+        )}
 
-            <button
-              className={activeTab === "preferences" ? "active" : ""}
-              onClick={() => setActiveTab("preferences")}
-            >
-              <Target size={16} /> Career Goals
-            </button>
-          </>
+        {isAcademicProfileRole && (
+          <button
+            className={activeTab === "preferences" ? "active" : ""}
+            onClick={() => setActiveTab("preferences")}
+          >
+            <Target size={16} />
+            Career Goals
+          </button>
         )}
 
         <button
           className={activeTab === "projects" ? "active" : ""}
           onClick={() => setActiveTab("projects")}
         >
-          <Code size={16} /> Projects & Credentials
+          <Code size={16} />
+          Projects & Credentials
         </button>
 
         <button
           className={activeTab === "documents" ? "active" : ""}
           onClick={() => setActiveTab("documents")}
         >
-          <FileText size={16} /> Digital Documents
+          <FileText size={16} />
+          Digital Documents
         </button>
       </div>
 
       {/* TAB CONTENT PANELS */}
       <div className="profile-tab-content">
+        {/* PERSONAL INFO */}
         {activeTab === "personal" && (
           <div className="tab-pane">
             <div className="card-header">
               <h2>
-                <User size={20} /> Information Overview
+                <User size={20} />
+                Personal Information
               </h2>
-              <p>Your primary profile details and connected web handles.</p>
+
+              <p>Your basic information synchronized with the database.</p>
             </div>
 
             <div className="form-grid">
               <div className="form-group">
-                <label>{isAcademicUser ? "Full Name" : "Account / Entity Name"}</label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name ?? ""}
-                    onChange={handleInputChange}
-                  />
-                ) : (
-                  <span className="field-value">{displayName}</span>
-                )}
-              </div>
+                <label>
+                  {isAcademicProfileRole ? "Full Name" : "Username"}
+                </label>
 
-              <div className="form-group">
-                <label>Username</label>
                 {isEditing ? (
                   <input
                     type="text"
-                    name="username"
-                    value={formData.username ?? ""}
+                    name={isAcademicProfileRole ? "name" : "username"}
+                    value={
+                      isAcademicProfileRole
+                        ? (formData.name ?? "")
+                        : (formData.username ?? "")
+                    }
                     onChange={handleInputChange}
                   />
                 ) : (
-                  <span className="field-value">{formData.username || "Not set"}</span>
+                  <span className="field-value">
+                    {isAcademicProfileRole
+                      ? formData.name || "Not provided"
+                      : formData.username || user?.username || "Not provided"}
+                  </span>
                 )}
               </div>
 
               <div className="form-group">
                 <label>Email Address</label>
+
                 <span className="field-value readonly">
-                  <Mail size={14} /> {formData.email}
+                  <Mail size={14} />
+                  {formData.email}
                 </span>
               </div>
 
               <div className="form-group">
                 <label>Phone Number</label>
+
                 {isEditing ? (
                   <input
                     type="text"
@@ -729,65 +1230,101 @@ export const Profile: React.FC = () => {
                     placeholder="+91 98765 43210"
                   />
                 ) : (
-                  <span className="field-value">{formData.phone || "Not provided"}</span>
+                  <span className="field-value">
+                    {formData.phone || "Not provided"}
+                  </span>
                 )}
               </div>
 
+              {isAcademicProfileRole && (
+                <>
+                  <div className="form-group">
+                    <label>Date of Birth</label>
+
+                    {isEditing ? (
+                      <input
+                        type="date"
+                        name="dob"
+                        value={formData.dob ? formData.dob.split("T")[0] : ""}
+                        onChange={handleInputChange}
+                      />
+                    ) : (
+                      <span className="field-value">
+                        <Calendar size={14} />
+                        {formData.dob
+                          ? formData.dob.split("T")[0]
+                          : "Not provided"}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label>Gender</label>
+
+                    {isEditing ? (
+                      <select
+                        name="gender"
+                        value={formData.gender ?? ""}
+                        onChange={handleInputChange}
+                      >
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Non-binary">Non-binary</option>
+                        <option value="Prefer not to say">
+                          Prefer not to say
+                        </option>
+                      </select>
+                    ) : (
+                      <span className="field-value">
+                        {formData.gender || "Not specified"}
+                      </span>
+                    )}
+                  </div>
+                </>
+              )}
+
               <div className="form-group">
-                <label>Location</label>
+                <label>Current Location</label>
+
                 {isEditing ? (
                   <input
                     type="text"
                     name="location"
                     value={formData.location ?? ""}
                     onChange={handleInputChange}
-                    placeholder="City, Country"
+                    placeholder="City, State"
                   />
                 ) : (
                   <span className="field-value">
-                    <MapPin size={14} /> {formData.location || "Not specified"}
+                    <MapPin size={14} />
+                    {formData.location || "Not specified"}
                   </span>
                 )}
               </div>
 
-              {isAcademicUser && (
-                <div className="form-group">
-                  <label>Date of Birth</label>
-                  {isEditing ? (
-                    <input
-                      type="date"
-                      name="dob"
-                      value={formData.dob ? formData.dob.split("T")[0] : ""}
-                      onChange={handleInputChange}
-                    />
-                  ) : (
-                    <span className="field-value">
-                      <Calendar size={14} />
-                      {formData.dob ? formData.dob.split("T")[0] : "Not provided"}
-                    </span>
-                  )}
-                </div>
-              )}
-
               <div className="form-group span-2">
-                <label>Bio / Description</label>
+                <label>Bio / About Me</label>
+
                 {isEditing ? (
                   <textarea
                     name="bio"
                     value={formData.bio ?? ""}
                     onChange={handleInputChange}
                     rows={3}
-                    placeholder="Share an overview..."
+                    placeholder="Share a brief overview of your skills, background, and aspirations..."
                   />
                 ) : (
-                  <p className="bio-text">{formData.bio || "No description provided."}</p>
+                  <p className="bio-text">
+                    {formData.bio || "No biography provided."}
+                  </p>
                 )}
               </div>
 
               {isEditing && (
                 <>
                   <div className="form-group">
-                    <label>GitHub Profile / Username</label>
+                    <label>GitHub Username or Profile URL</label>
                     <input
                       type="text"
                       name="github"
@@ -798,30 +1335,32 @@ export const Profile: React.FC = () => {
                   </div>
 
                   <div className="form-group">
-                    <label>LinkedIn URL</label>
+                    <label>LinkedIn Profile URL</label>
                     <input
                       type="text"
                       name="linkedin"
                       value={formData.linkedin ?? ""}
                       onChange={handleInputChange}
-                      placeholder="https://linkedin.com/in/profile"
+                      placeholder="https://linkedin.com/in/yourprofile"
                     />
                   </div>
 
                   <div className="form-group span-2">
-                    <label>Official Website / Portfolio URL</label>
+                    <label>
+                      {isAcademicProfileRole
+                        ? "Personal Portfolio URL"
+                        : "Profile Website / Company or Institution Page"}
+                    </label>
                     <input
                       type="text"
-                      name="portfolio"
-                      value={formData.portfolio || formData.website || ""}
-                      onChange={(e) => {
-                        handleInputChange(e);
-                        setFormData((prev: any) => ({
-                          ...prev,
-                          website: e.target.value,
-                        }));
-                      }}
-                      placeholder="https://yourpage.com"
+                      name={isAcademicProfileRole ? "portfolio" : "website"}
+                      value={
+                        isAcademicProfileRole
+                          ? (formData.portfolio ?? "")
+                          : (formData.website ?? formData.portfolio ?? "")
+                      }
+                      onChange={handleInputChange}
+                      placeholder="https://yourportfolio.com"
                     />
                   </div>
                 </>
@@ -831,8 +1370,15 @@ export const Profile: React.FC = () => {
             {!isEditing && (
               <div style={{ marginTop: "2rem" }}>
                 <div className="sub-section-title">
-                  <h3 style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <Code size={18} className="text-primary" /> Connected Profiles & Portals
+                  <h3
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <Code size={18} className="text-primary" />
+                    Developer Accounts & Connected Profiles
                   </h3>
                 </div>
 
@@ -846,6 +1392,7 @@ export const Profile: React.FC = () => {
                           <p>{formData.github || "Not connected"}</p>
                         </div>
                       </div>
+
                       {formData.github ? (
                         <span className="connected-badge">
                           <CheckCircle2 size={12} /> Connected
@@ -854,7 +1401,19 @@ export const Profile: React.FC = () => {
                         <span className="unconnected-badge">Unlinked</span>
                       )}
                     </div>
+
                     <div className="account-actions">
+                      {isAcademicProfileRole && (
+                        <button
+                          type="button"
+                          className="btn-github-sync"
+                          onClick={() => handleFetchGitHubRepos()}
+                        >
+                          <RefreshCw size={14} />
+                          Sync GitHub Repositories
+                        </button>
+                      )}
+
                       {formData.github && (
                         <a
                           href={
@@ -865,6 +1424,12 @@ export const Profile: React.FC = () => {
                           target="_blank"
                           rel="noopener noreferrer"
                           className="project-link-btn"
+                          style={{
+                            padding: "0.5rem 0.8rem",
+                            background: "var(--bg-card)",
+                            borderRadius: "var(--radius-md)",
+                            border: "1px solid var(--border-color)",
+                          }}
                         >
                           <ExternalLink size={13} /> View GitHub
                         </a>
@@ -875,12 +1440,15 @@ export const Profile: React.FC = () => {
                   <div className="account-card">
                     <div className="account-card-header">
                       <div className="account-info">
-                        <div className="account-icon-wrapper linkedin-bg">in</div>
+                        <div className="account-icon-wrapper linkedin-bg">
+                          in
+                        </div>
                         <div className="account-details">
                           <strong>LinkedIn Profile</strong>
                           <p>{formData.linkedin || "Not connected"}</p>
                         </div>
                       </div>
+
                       {formData.linkedin ? (
                         <span className="connected-badge">
                           <CheckCircle2 size={12} /> Connected
@@ -889,8 +1457,9 @@ export const Profile: React.FC = () => {
                         <span className="unconnected-badge">Unlinked</span>
                       )}
                     </div>
+
                     <div className="account-actions">
-                      {formData.linkedin && (
+                      {formData.linkedin ? (
                         <a
                           href={
                             formData.linkedin.startsWith("http")
@@ -900,9 +1469,27 @@ export const Profile: React.FC = () => {
                           target="_blank"
                           rel="noopener noreferrer"
                           className="project-link-btn"
+                          style={{
+                            padding: "0.5rem 0.8rem",
+                            background: "var(--bg-card)",
+                            borderRadius: "var(--radius-md)",
+                            border: "1px solid var(--border-color)",
+                          }}
                         >
                           <ExternalLink size={13} /> View Profile ↗
                         </a>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => setIsEditing(true)}
+                          style={{
+                            fontSize: "0.8rem",
+                            padding: "0.45rem 0.85rem",
+                          }}
+                        >
+                          + Connect LinkedIn
+                        </button>
                       )}
                     </div>
                   </div>
@@ -914,11 +1501,20 @@ export const Profile: React.FC = () => {
                           <Globe size={20} />
                         </div>
                         <div className="account-details">
-                          <strong>Website / Portfolio</strong>
-                          <p>{formData.portfolio || formData.website || "Not connected"}</p>
+                          <strong>
+                            {isAcademicProfileRole
+                              ? "Personal Portfolio"
+                              : "Profile Website"}
+                          </strong>
+                          <p>
+                            {formData.website ||
+                              formData.portfolio ||
+                              "Not connected"}
+                          </p>
                         </div>
                       </div>
-                      {formData.portfolio || formData.website ? (
+
+                      {formData.website || formData.portfolio ? (
                         <span className="connected-badge">
                           <CheckCircle2 size={12} /> Connected
                         </span>
@@ -926,20 +1522,43 @@ export const Profile: React.FC = () => {
                         <span className="unconnected-badge">Unlinked</span>
                       )}
                     </div>
+
                     <div className="account-actions">
-                      {(formData.portfolio || formData.website) && (
+                      {formData.website || formData.portfolio ? (
                         <a
                           href={
-                            (formData.portfolio || formData.website).startsWith("http")
-                              ? formData.portfolio || formData.website
-                              : `https://${formData.portfolio || formData.website}`
+                            (
+                              formData.website ||
+                              formData.portfolio ||
+                              ""
+                            ).startsWith("http")
+                              ? formData.website || formData.portfolio || ""
+                              : `https://${formData.website || formData.portfolio || ""}`
                           }
                           target="_blank"
                           rel="noopener noreferrer"
                           className="project-link-btn"
+                          style={{
+                            padding: "0.5rem 0.8rem",
+                            background: "var(--bg-card)",
+                            borderRadius: "var(--radius-md)",
+                            border: "1px solid var(--border-color)",
+                          }}
                         >
                           <ExternalLink size={13} /> Visit Site ↗
                         </a>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => setIsEditing(true)}
+                          style={{
+                            fontSize: "0.8rem",
+                            padding: "0.45rem 0.85rem",
+                          }}
+                        >
+                          + Add Website
+                        </button>
                       )}
                     </div>
                   </div>
@@ -949,35 +1568,49 @@ export const Profile: React.FC = () => {
           </div>
         )}
 
-        {isAcademicUser && activeTab === "academic" && (
+        {/* ACADEMIC DETAILS */}
+        {activeTab === "academic" && (
           <div className="tab-pane">
             <div className="card-header">
               <h2>
-                <GraduationCap size={20} /> Academic Credentials
+                <GraduationCap size={20} />
+                Academic Credentials
               </h2>
-              <p>Your institutional information.</p>
+
+              <p>Your academic information stored in the database.</p>
             </div>
 
             <div className="form-grid">
               <div className="form-group span-2">
-                <label>Institution Name</label>
+                <label>Institution Name (Relational DB Linked)</label>
+
                 {isEditing ? (
-                  <InstitutionSelectCombobox
-                    institutions={institutions}
-                    selectedId={formData.institution_id}
-                    onSelect={(inst) => {
-                      setFormData((prev: any) =>
-                        prev
-                          ? {
-                              ...prev,
-                              institution_id: inst ? inst.id : undefined,
-                              institution: inst ? inst.name : prev.institution,
-                            }
-                          : null
-                      );
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "0.5rem",
+                      flexDirection: "column",
                     }}
-                    placeholder="Search registered university or college..."
-                  />
+                  >
+                    <InstitutionSelectCombobox
+                      institutions={institutions}
+                      selectedId={formData.institution_id}
+                      onSelect={(inst) => {
+                        setFormData((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                institution_id: inst ? inst.id : undefined,
+                                institution: inst
+                                  ? inst.name
+                                  : prev.institution,
+                              }
+                            : null,
+                        );
+                      }}
+                      placeholder="Search registered university or college..."
+                    />
+                  </div>
                 ) : (
                   <span className="field-value bold">
                     <BookOpen size={16} />
@@ -988,34 +1621,96 @@ export const Profile: React.FC = () => {
 
               <div className="form-group">
                 <label>Degree Program</label>
+
                 {isEditing ? (
                   <input
                     type="text"
                     name="degree"
                     value={formData.degree ?? ""}
                     onChange={handleInputChange}
+                    placeholder="e.g. B.Tech, M.Tech, BCA"
                   />
                 ) : (
-                  <span className="field-value">{formData.degree || "Not specified"}</span>
+                  <span className="field-value">
+                    {formData.degree || "Not specified"}
+                  </span>
                 )}
               </div>
 
               <div className="form-group">
                 <label>Department / Branch</label>
+
                 {isEditing ? (
                   <input
                     type="text"
                     name="department"
                     value={formData.department ?? ""}
                     onChange={handleInputChange}
+                    placeholder="e.g. Computer Science & Engineering"
                   />
                 ) : (
-                  <span className="field-value">{formData.department || "Not specified"}</span>
+                  <span className="field-value">
+                    {formData.department || "Not specified"}
+                  </span>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label>Roll Number / Enrollment ID</label>
+
+                {isEditing ? (
+                  <input
+                    type="text"
+                    name="roll_number"
+                    value={formData.roll_number ?? ""}
+                    onChange={handleInputChange}
+                  />
+                ) : (
+                  <span className="field-value">
+                    {formData.roll_number || "Not specified"}
+                  </span>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label>Student ID</label>
+
+                {isEditing ? (
+                  <input
+                    type="text"
+                    name="student_id"
+                    value={formData.student_id ?? ""}
+                    onChange={handleInputChange}
+                    placeholder="e.g. STU20260042 or JISU25CSE014"
+                  />
+                ) : (
+                  <span className="field-value">
+                    {formData.student_id || "Not provided"}
+                  </span>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label>Current Semester / Year</label>
+
+                {isEditing ? (
+                  <input
+                    type="text"
+                    name="current_sem"
+                    value={formData.current_sem ?? ""}
+                    onChange={handleInputChange}
+                    placeholder="e.g. 6th Semester"
+                  />
+                ) : (
+                  <span className="field-value">
+                    {formData.current_sem || "Not specified"}
+                  </span>
                 )}
               </div>
 
               <div className="form-group">
                 <label>Cumulative CGPA</label>
+
                 {isEditing ? (
                   <input
                     type="number"
@@ -1036,22 +1731,48 @@ export const Profile: React.FC = () => {
                   </span>
                 )}
               </div>
+
+              <div className="form-group">
+                <label>Expected Graduation Year</label>
+
+                {isEditing ? (
+                  <input
+                    type="text"
+                    name="expected_grad"
+                    value={formData.expected_grad ?? ""}
+                    onChange={handleInputChange}
+                    placeholder="e.g. 2026"
+                  />
+                ) : (
+                  <span className="field-value">
+                    {formData.expected_grad || "Not specified"}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         )}
 
-        {isAcademicUser && activeTab === "skills" && (
+        {/* SKILLS */}
+        {activeTab === "skills" && (
           <div className="tab-pane">
             <div className="card-header">
               <h2>
-                <Sparkles size={20} /> Skill Matrix & Mastery
+                <Sparkles size={20} />
+                Skill Matrix & Mastery
               </h2>
+
+              <p>
+                Add, manage, and verify your skills stored dynamically in the
+                relational database.
+              </p>
             </div>
 
             <div className="add-skill-card">
               <h3>
                 <Plus size={18} /> Add New Skill
               </h3>
+
               <form onSubmit={handleAddSkill} className="skill-form-grid">
                 <div className="skill-field-group">
                   <label>Skill Name</label>
@@ -1059,7 +1780,9 @@ export const Profile: React.FC = () => {
                     className="skill-select-input"
                     value={selectedSkillId}
                     onChange={(e) => {
-                      setSelectedSkillId(e.target.value === "" ? "" : Number(e.target.value));
+                      setSelectedSkillId(
+                        e.target.value === "" ? "" : Number(e.target.value),
+                      );
                       setSkillActionError(null);
                       setSkillActionMessage(null);
                     }}
@@ -1074,88 +1797,497 @@ export const Profile: React.FC = () => {
                 </div>
 
                 <div className="skill-field-group">
-                  <label>Category</label>
-                  <div className={`skill-category-display ${!autoCategory ? "empty" : ""}`}>
-                    {autoCategory || "Auto-filled"}
+                  <label>Category (Auto-assigned)</label>
+                  <div
+                    className={`skill-category-display ${!autoCategory ? "empty" : ""}`}
+                  >
+                    {autoCategory
+                      ? autoCategory
+                      : "Auto-filled upon skill selection"}
                   </div>
                 </div>
 
                 <div>
                   <button
                     type="submit"
-                    disabled={!selectedSkillId || isSkillAlreadyAdded || skillAddLoading}
-                    className="btn-primary"
-                    style={{ width: "100%", justifyContent: "center" }}
+                    disabled={
+                      !selectedSkillId || isSkillAlreadyAdded || skillAddLoading
+                    }
+                    style={{
+                      padding: "0.6rem 1.2rem",
+                      borderRadius: "8px",
+                      background: isSkillAlreadyAdded
+                        ? "#6b7280"
+                        : "var(--primary-color, #6366f1)",
+                      color: "#ffffff",
+                      border: "none",
+                      fontWeight: 600,
+                      cursor:
+                        !selectedSkillId ||
+                        isSkillAlreadyAdded ||
+                        skillAddLoading
+                          ? "not-allowed"
+                          : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.4rem",
+                      opacity:
+                        !selectedSkillId ||
+                        isSkillAlreadyAdded ||
+                        skillAddLoading
+                          ? 0.7
+                          : 1,
+                      width: "100%",
+                      justifyContent: "center",
+                    }}
                   >
-                    {skillAddLoading ? <Loader2 size={16} className="spin-icon" /> : <Plus size={16} />}
+                    {skillAddLoading ? (
+                      <Loader2 size={16} className="spin-icon" />
+                    ) : (
+                      <Plus size={16} />
+                    )}
                     {isSkillAlreadyAdded ? "Skill Already Added" : "Add Skill"}
                   </button>
                 </div>
               </form>
 
               {skillActionError && (
-                <div style={{ color: "#ef4444", marginTop: "0.5rem" }}>
+                <div
+                  style={{
+                    marginTop: "0.75rem",
+                    color: "#ef4444",
+                    fontSize: "0.85rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                  }}
+                >
                   <AlertCircle size={15} /> {skillActionError}
                 </div>
               )}
               {skillActionMessage && (
-                <div style={{ color: "#10b981", marginTop: "0.5rem" }}>
+                <div
+                  style={{
+                    marginTop: "0.75rem",
+                    color: "#10b981",
+                    fontSize: "0.85rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                  }}
+                >
                   <CheckCircle2 size={15} /> {skillActionMessage}
                 </div>
               )}
             </div>
 
-            <div className="skills-dna-grid" style={{ marginTop: "1rem" }}>
-              {data?.skills?.map((skill) => (
-                <div key={skill.id} className="skill-meter-card">
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <strong>{skill.name}</strong>
-                    <button
-                      onClick={() => handleDeleteSkill(skill.id, skill.name)}
-                      style={{ background: "none", border: "none", color: "#ef4444" }}
+            <div className="sub-section-title" style={{ marginBottom: "1rem" }}>
+              <h3>Your Skills & Proficiency Records</h3>
+            </div>
+
+            {data.skills?.length === 0 ? (
+              <div
+                style={{
+                  padding: "2rem",
+                  textAlign: "center",
+                  color: "var(--text-muted)",
+                }}
+              >
+                <Sparkles
+                  size={30}
+                  style={{ margin: "0 auto 0.75rem", opacity: 0.5 }}
+                />
+                <p>
+                  No skills added to your profile yet. Select a skill above to
+                  add one!
+                </p>
+              </div>
+            ) : (
+              <div className="skills-dna-grid">
+                {data.skills.map((skill) => {
+                  const normName = skill.name
+                    .toLowerCase()
+                    .replace("&", "and")
+                    .trim();
+                  const masterMatch = masterSkills.find((m) => {
+                    if (m.id === skill.skill_id) return true;
+                    const mNorm = m.name
+                      .toLowerCase()
+                      .replace("&", "and")
+                      .trim();
+                    return mNorm === normName;
+                  });
+                  const targetSkillId =
+                    skill.skill_id || (masterMatch ? masterMatch.id : skill.id);
+
+                  return (
+                    <div key={skill.id} className="skill-meter-card">
+                      <div
+                        className="skill-meter-top"
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.55rem",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontWeight: 600,
+                              fontSize: "0.95rem",
+                              lineHeight: 1.2,
+                              display: "inline-flex",
+                              alignItems: "center",
+                            }}
+                          >
+                            {skill.name}
+                          </span>
+                          {skill.category && (
+                            <span
+                              style={{
+                                fontSize: "0.7rem",
+                                padding: "0.2rem 0.55rem",
+                                borderRadius: "12px",
+                                background:
+                                  skill.category === "Soft Skill"
+                                    ? "rgba(236, 72, 153, 0.15)"
+                                    : "rgba(99, 102, 241, 0.15)",
+                                color:
+                                  skill.category === "Soft Skill"
+                                    ? "#ec4899"
+                                    : "#6366f1",
+                                fontWeight: 600,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                lineHeight: 1,
+                                boxSizing: "border-box",
+                              }}
+                            >
+                              {skill.category}
+                            </span>
+                          )}
+                        </div>
+
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.5rem",
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: "0.78rem",
+                              color: "var(--text-muted)",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "0.3rem",
+                            }}
+                          >
+                            Proficiency Score:{" "}
+                            <b
+                              style={{
+                                color: "var(--text-primary)",
+                                fontWeight: 700,
+                                fontSize: "0.9rem",
+                              }}
+                            >
+                              {skill.proficiency_score}%
+                            </b>
+                          </span>
+                          <button
+                            onClick={() =>
+                              handleDeleteSkill(skill.id, skill.name)
+                            }
+                            title="Remove Skill"
+                            style={{
+                              background: "transparent",
+                              border: "none",
+                              color: "#ef4444",
+                              cursor: "pointer",
+                              padding: "0.2rem",
+                              display: "flex",
+                              alignItems: "center",
+                            }}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div
+                        className="skill-progress-bar"
+                        style={{ marginTop: "0.6rem" }}
+                      >
+                        <span
+                          style={{ width: `${skill.proficiency_score}%` }}
+                        />
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginTop: "0.75rem",
+                          fontSize: "0.75rem",
+                          color: "var(--text-muted)",
+                        }}
+                      >
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.25rem",
+                            color:
+                              skill.verification_source ===
+                              "Verified Assessment"
+                                ? "#10b981"
+                                : "var(--text-muted)",
+                            fontWeight:
+                              skill.verification_source ===
+                              "Verified Assessment"
+                                ? 600
+                                : 400,
+                          }}
+                        >
+                          {skill.verification_source ===
+                            "Verified Assessment" && (
+                            <CheckCircle2 size={13} color="#10b981" />
+                          )}
+                          {skill.verification_source || "Self Reported"}
+                        </span>
+
+                        <button
+                          type="button"
+                          className="assess-yourself-btn"
+                          onClick={() =>
+                            setActiveAssessmentSkill({
+                              skillId: targetSkillId,
+                              skillName: skill.name,
+                              skillCategory: skill.category || "Technical",
+                            })
+                          }
+                        >
+                          <Award size={14} />
+                          Assess Yourself
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="sub-section-title" style={{ marginTop: "2rem" }}>
+              <h3>Verified Skill Badges</h3>
+            </div>
+
+            <div className="badges-flex">
+              {data.skills?.filter((skill) => skill.is_badge_earned).length ===
+              0 ? (
+                <p style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>
+                  No verified skill badges earned yet. Complete assessments to
+                  earn badges!
+                </p>
+              ) : (
+                data.skills
+                  .filter((skill) => skill.is_badge_earned)
+                  .map((skill) => (
+                    <div
+                      key={`badge-${skill.id}`}
+                      className="badge-chip emerald"
                     >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                  <div className="skill-progress-bar" style={{ marginTop: "0.5rem" }}>
-                    <span style={{ width: `${skill.proficiency_score}%` }} />
-                  </div>
-                  <div style={{ marginTop: "0.5rem", fontSize: "0.8rem" }}>
-                    Score: {skill.proficiency_score}%
-                  </div>
-                </div>
-              ))}
+                      <CheckCircle2 size={16} />
+                      {skill.name}
+                    </div>
+                  ))
+              )}
             </div>
           </div>
         )}
 
-        {isAcademicUser && activeTab === "preferences" && (
+        {/* CAREER PREFERENCES */}
+        {activeTab === "preferences" && (
           <div className="tab-pane">
             <div className="card-header">
               <h2>
-                <Target size={20} /> Career Goals & Preferences
+                <Target size={20} />
+                Career Goals & Preferences
               </h2>
+
+              <p>Manage your career preferences and expectations.</p>
             </div>
+
             <div className="preferences-grid">
               <div className="pref-card">
                 <Briefcase size={22} className="pref-icon" />
+
                 <div style={{ width: "100%" }}>
                   <strong>Target Job Roles</strong>
+
                   {isEditing ? (
                     <textarea
                       value={targetRolesInput}
                       onChange={(e) => {
-                        setTargetRolesInput(e.target.value);
-                        const parsed = e.target.value.split(",").map((s) => s.trim()).filter(Boolean);
-                        setFormData((prev: any) => ({ ...prev, target_roles: parsed }));
+                        const val = e.target.value;
+                        setTargetRolesInput(val);
+                        const parsed = val
+                          .split(",")
+                          .map((s) => s.trim())
+                          .filter(Boolean);
+                        setFormData((prev) =>
+                          prev ? { ...prev, target_roles: parsed } : null,
+                        );
                       }}
+                      placeholder="e.g. Software Engineer, Data Analyst, AI Engineer"
+                      rows={3}
                     />
                   ) : (
                     <div className="tag-list">
-                      {formData?.target_roles?.map((role: string, i: number) => (
-                        <span key={i} className="tag">{role}</span>
-                      ))}
+                      {formData?.target_roles?.length ? (
+                        formData.target_roles.map((role, index) => (
+                          <span key={`${role}-${index}`} className="tag">
+                            {role}
+                          </span>
+                        ))
+                      ) : (
+                        <span
+                          style={{
+                            color: "var(--text-muted)",
+                            fontSize: "0.82rem",
+                          }}
+                        >
+                          No target roles specified.
+                        </span>
+                      )}
                     </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="pref-card">
+                <MapPin size={22} className="pref-icon" />
+
+                <div style={{ width: "100%" }}>
+                  <strong>Preferred Work Locations</strong>
+
+                  {isEditing ? (
+                    <textarea
+                      value={preferredLocationsInput}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setPreferredLocationsInput(val);
+                        const parsed = val
+                          .split(",")
+                          .map((s) => s.trim())
+                          .filter(Boolean);
+                        setFormData((prev) =>
+                          prev
+                            ? { ...prev, preferred_locations: parsed }
+                            : null,
+                        );
+                      }}
+                      placeholder="e.g. Kolkata, Bengaluru, Remote"
+                      rows={3}
+                    />
+                  ) : (
+                    <div className="tag-list">
+                      {formData?.preferred_locations?.length ? (
+                        formData.preferred_locations.map((location, index) => (
+                          <span key={`${location}-${index}`} className="tag">
+                            {location}
+                          </span>
+                        ))
+                      ) : (
+                        <span
+                          style={{
+                            color: "var(--text-muted)",
+                            fontSize: "0.82rem",
+                          }}
+                        >
+                          No preferred locations specified.
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="pref-card">
+                <Globe size={22} className="pref-icon" />
+
+                <div>
+                  <strong>Work Mode Preference</strong>
+
+                  {isEditing ? (
+                    <select
+                      name="work_mode_preference"
+                      value={formData.work_mode_preference ?? "Hybrid"}
+                      onChange={handleInputChange}
+                    >
+                      <option value="Hybrid">Hybrid</option>
+                      <option value="Remote">Remote</option>
+                      <option value="On-site">On-site</option>
+                      <option value="Flexible">Flexible</option>
+                    </select>
+                  ) : (
+                    <p>{formData.work_mode_preference || "Flexible"}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="pref-card">
+                <FileText size={22} className="pref-icon" />
+
+                <div>
+                  <strong>Expected Monthly Stipend</strong>
+
+                  {isEditing ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "0.5rem",
+                        marginTop: "0.4rem",
+                      }}
+                    >
+                      <input
+                        type="number"
+                        placeholder="Min (₹)"
+                        value={formData.expected_stipend_min ?? ""}
+                        onChange={(e) =>
+                          handleNumberChange(
+                            "expected_stipend_min",
+                            e.target.value,
+                          )
+                        }
+                      />
+                      <input
+                        type="number"
+                        placeholder="Max (₹)"
+                        value={formData.expected_stipend_max ?? ""}
+                        onChange={(e) =>
+                          handleNumberChange(
+                            "expected_stipend_max",
+                            e.target.value,
+                          )
+                        }
+                      />
+                    </div>
+                  ) : (
+                    <p>
+                      {formData.expected_stipend_min ||
+                      formData.expected_stipend_max
+                        ? `₹${formData.expected_stipend_min?.toLocaleString() || 0} - ₹${formData.expected_stipend_max?.toLocaleString() || "Open"}/mo`
+                        : "Negotiable / Open"}
+                    </p>
                   )}
                 </div>
               </div>
@@ -1163,37 +2295,245 @@ export const Profile: React.FC = () => {
           </div>
         )}
 
+        {/* PROJECTS & CREDENTIALS */}
         {activeTab === "projects" && (
           <div className="tab-pane">
-            <div className="card-header" style={{ display: "flex", justifyContent: "space-between" }}>
-              <h2>
-                <Code size={20} /> Projects & Portfolio Records
-              </h2>
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={() => setShowAddProjectModal(true)}
-              >
-                <Plus size={14} /> Add Project
-              </button>
+            <div
+              className="card-header"
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                flexWrap: "wrap",
+                gap: "1rem",
+              }}
+            >
+              <div>
+                <h2>
+                  <Code size={20} />
+                  Projects & Portfolio Credentials
+                </h2>
+
+                <p>
+                  Manage and synchronize your real developer projects from
+                  GitHub & database records.
+                </p>
+              </div>
+
+              <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  className="btn-github-sync"
+                  onClick={() => handleFetchGitHubRepos()}
+                >
+                  <RefreshCw size={14} />
+                  Sync from GitHub
+                </button>
+
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => setShowAddProjectModal(true)}
+                >
+                  <Plus size={14} />
+                  Add Custom Project
+                </button>
+              </div>
+            </div>
+
+            <div className="sub-section-title">
+              <h3>Academic & Personal Projects</h3>
             </div>
 
             <div className="projects-grid">
-              {data?.projects?.length === 0 ? (
-                <p>No projects recorded yet.</p>
+              {data.projects?.length === 0 ? (
+                <div
+                  style={{
+                    gridColumn: "1 / -1",
+                    textAlign: "center",
+                    padding: "2.5rem 1rem",
+                    background: "var(--bg-app)",
+                    borderRadius: "var(--radius-lg)",
+                    border: "1px dashed var(--border-color)",
+                  }}
+                >
+                  <Code
+                    size={36}
+                    style={{
+                      color: "var(--text-muted)",
+                      marginBottom: "0.5rem",
+                    }}
+                  />
+                  <p
+                    style={{
+                      color: "var(--text-muted)",
+                      fontSize: "0.9rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    No projects recorded in your profile yet.
+                  </p>
+                  <p
+                    style={{
+                      color: "var(--text-muted)",
+                      fontSize: "0.8rem",
+                      marginTop: "0.25rem",
+                    }}
+                  >
+                    Click "Sync from GitHub" above to pull your live public
+                    repositories automatically!
+                  </p>
+                </div>
               ) : (
-                data?.projects?.map((project) => (
+                data.projects.map((project) => (
                   <div key={project.id} className="project-card">
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <div className="project-top">
                       <h4>{project.title}</h4>
-                      <button
-                        onClick={() => handleDeleteProject(project.id)}
-                        style={{ color: "#ef4444", background: "none", border: "none" }}
+
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.5rem",
+                        }}
                       >
-                        <Trash2 size={13} />
-                      </button>
+                        <span className="status-badge">{project.status}</span>
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          onClick={() => handleDeleteProject(project.id)}
+                          title="Delete Project"
+                          style={{
+                            width: "26px",
+                            height: "26px",
+                            color: "#ef4444",
+                          }}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </div>
+
                     <p>{project.description}</p>
+
+                    <div className="tech-stack-flex">
+                      {project.tech_stack?.map((tech, i) => (
+                        <span key={i} className="tech-pill">
+                          {tech}
+                        </span>
+                      ))}
+                    </div>
+
+                    {(project.project_url || project.repo_url) && (
+                      <div className="project-links-flex">
+                        {project.repo_url && (
+                          <a
+                            href={project.repo_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="project-link-btn"
+                          >
+                            <Code size={13} /> Repository
+                          </a>
+                        )}
+
+                        {project.project_url && (
+                          <a
+                            href={project.project_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="project-link-btn"
+                          >
+                            <ExternalLink size={13} /> Live Demo
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div
+              className="sub-section-title"
+              style={{
+                marginTop: "2.5rem",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <h3>Certifications & Licenses</h3>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => setShowAddCertModal(true)}
+                style={{ fontSize: "0.78rem", padding: "0.4rem 0.8rem" }}
+              >
+                <Plus size={14} />
+                Add Certification
+              </button>
+            </div>
+
+            <div className="certs-list">
+              {data.certifications?.length === 0 ? (
+                <p style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>
+                  No certifications recorded in the database yet. Click "+ Add
+                  Certification" to add one.
+                </p>
+              ) : (
+                data.certifications.map((cert) => (
+                  <div
+                    key={cert.id}
+                    className="cert-item"
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.75rem",
+                      }}
+                    >
+                      <Award size={20} className="cert-icon" />
+
+                      <div>
+                        <h4>{cert.title}</h4>
+
+                        <p>
+                          {cert.issuer}{" "}
+                          {cert.issue_year ? `• Issued ${cert.issue_year}` : ""}
+                        </p>
+                        {cert.credential_url && (
+                          <a
+                            href={cert.credential_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              fontSize: "0.75rem",
+                              color: "var(--color-primary)",
+                              textDecoration: "none",
+                            }}
+                          >
+                            Verify Credential ↗
+                          </a>
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="btn-icon"
+                      onClick={() => handleDeleteCert(cert.id)}
+                      title="Delete Certification"
+                      style={{ color: "#ef4444", padding: "0.3rem" }}
+                    >
+                      <Trash2 size={15} />
+                    </button>
                   </div>
                 ))
               )}
@@ -1201,6 +2541,7 @@ export const Profile: React.FC = () => {
           </div>
         )}
 
+        {/* DIGITAL DOCUMENTS */}
         {activeTab === "documents" && (
           <div className="tab-pane">
             <DigitalDocumentsManager
@@ -1213,41 +2554,352 @@ export const Profile: React.FC = () => {
           </div>
         )}
 
+        {/* GITHUB REPOS SYNC MODAL */}
+        {showGitHubModal && (
+          <div className="github-modal-overlay">
+            <div className="github-modal-card">
+              <div className="github-modal-header">
+                <h3>
+                  <Code size={18} className="text-primary" />
+                  Sync GitHub Public Repositories
+                </h3>
+                <button
+                  type="button"
+                  className="btn-icon"
+                  onClick={() => setShowGitHubModal(false)}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="github-modal-body">
+                <div style={{ display: "flex", gap: "0.6rem" }}>
+                  <input
+                    type="text"
+                    placeholder="Enter GitHub Username or Profile URL..."
+                    value={githubSyncUsername || formData?.github || ""}
+                    onChange={(e) => setGithubSyncUsername(e.target.value)}
+                    style={{
+                      flex: 1,
+                      padding: "0.65rem 0.85rem",
+                      background: "var(--bg-app)",
+                      border: "1px solid var(--border-color)",
+                      borderRadius: "var(--radius-md)",
+                      color: "var(--text-primary)",
+                      fontSize: "0.88rem",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={() => handleFetchGitHubRepos(githubSyncUsername)}
+                    disabled={githubSyncLoading}
+                  >
+                    {githubSyncLoading ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <RefreshCw size={16} />
+                    )}
+                    Fetch Repos
+                  </button>
+                </div>
+
+                {githubSyncError && (
+                  <div className="auth-alert error" style={{ margin: 0 }}>
+                    <AlertCircle size={15} />
+                    {githubSyncError}
+                  </div>
+                )}
+
+                {importSuccessMsg && (
+                  <div className="auth-alert success" style={{ margin: 0 }}>
+                    <CheckCircle2 size={15} />
+                    {importSuccessMsg}
+                  </div>
+                )}
+
+                {githubSyncLoading ? (
+                  <div
+                    style={{
+                      padding: "3rem",
+                      textAlign: "center",
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    <Loader2
+                      size={32}
+                      className="animate-spin"
+                      style={{ margin: "0 auto 1rem auto" }}
+                    />
+                    <p>
+                      Connecting to GitHub API & loading public repositories...
+                    </p>
+                  </div>
+                ) : githubSyncRepos.length > 0 ? (
+                  <>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "0.85rem",
+                          color: "var(--text-muted)",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Found {githubSyncRepos.length} public repository(s).
+                        Select repos to import:
+                      </span>
+                      <button
+                        type="button"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "var(--primary-light)",
+                          fontSize: "0.8rem",
+                          cursor: "pointer",
+                          fontWeight: 600,
+                        }}
+                        onClick={() => {
+                          if (
+                            selectedRepoIds.length === githubSyncRepos.length
+                          ) {
+                            setSelectedRepoIds([]);
+                          } else {
+                            setSelectedRepoIds(
+                              githubSyncRepos.map((r) => r.id),
+                            );
+                          }
+                        }}
+                      >
+                        {selectedRepoIds.length === githubSyncRepos.length
+                          ? "Deselect All"
+                          : "Select All"}
+                      </button>
+                    </div>
+
+                    <div className="repos-list">
+                      {githubSyncRepos.map((repo) => {
+                        const isSelected = selectedRepoIds.includes(repo.id);
+                        return (
+                          <div
+                            key={repo.id}
+                            className={`repo-select-item ${isSelected ? "selected" : ""}`}
+                            onClick={() => toggleRepoSelection(repo.id)}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleRepoSelection(repo.id)}
+                              className="repo-checkbox"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <div className="repo-meta">
+                              <div className="repo-title-row">
+                                <strong>{repo.name}</strong>
+                                {repo.stargazers_count > 0 && (
+                                  <span className="repo-stars">
+                                    ★ {repo.stargazers_count}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="repo-description">
+                                {repo.description}
+                              </p>
+                              <div className="tech-stack-flex">
+                                {repo.tech_stack?.map(
+                                  (tech: string, i: number) => (
+                                    <span key={i} className="tech-pill">
+                                      {tech}
+                                    </span>
+                                  ),
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                ) : (
+                  !githubSyncLoading && (
+                    <div
+                      style={{
+                        textAlign: "center",
+                        padding: "2rem",
+                        color: "var(--text-muted)",
+                      }}
+                    >
+                      <p>
+                        No repositories loaded. Enter a valid GitHub username
+                        and click "Fetch Repos".
+                      </p>
+                    </div>
+                  )
+                )}
+              </div>
+
+              <div className="github-modal-footer">
+                <span
+                  style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}
+                >
+                  Selected: {selectedRepoIds.length} project(s)
+                </span>
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => setShowGitHubModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={handleImportSelectedRepos}
+                    disabled={importLoading || selectedRepoIds.length === 0}
+                  >
+                    {importLoading ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <Save size={16} />
+                    )}
+                    Import to SkillBridge Portfolio
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ADD CUSTOM PROJECT MODAL */}
         {showAddProjectModal && (
           <div className="github-modal-overlay">
             <div className="github-modal-card" style={{ maxWidth: "550px" }}>
               <div className="github-modal-header">
-                <h3>Add Custom Project</h3>
-                <button onClick={() => setShowAddProjectModal(false)}>
+                <h3>
+                  <Plus size={18} className="text-primary" />
+                  Add Custom Project
+                </h3>
+                <button
+                  type="button"
+                  className="btn-icon"
+                  onClick={() => setShowAddProjectModal(false)}
+                >
                   <X size={16} />
                 </button>
               </div>
+
               <form onSubmit={handleAddProject}>
                 <div className="github-modal-body">
+                  {addProjError && (
+                    <div className="auth-alert error" style={{ margin: 0 }}>
+                      <AlertCircle size={15} />
+                      {addProjError}
+                    </div>
+                  )}
+
                   <div className="form-group">
                     <label>Project Title *</label>
                     <input
                       type="text"
                       required
+                      placeholder="e.g. AI-Powered Skill Placement Platform"
                       value={newProjData.title}
                       onChange={(e) =>
-                        setNewProjData({ ...newProjData, title: e.target.value })
+                        setNewProjData({
+                          ...newProjData,
+                          title: e.target.value,
+                        })
                       }
                     />
                   </div>
+
                   <div className="form-group">
                     <label>Description</label>
                     <textarea
                       rows={3}
+                      placeholder="Brief overview of the project and core achievements..."
                       value={newProjData.description}
                       onChange={(e) =>
-                        setNewProjData({ ...newProjData, description: e.target.value })
+                        setNewProjData({
+                          ...newProjData,
+                          description: e.target.value,
+                        })
                       }
                     />
                   </div>
+
+                  <div className="form-group">
+                    <label>Technologies / Tech Stack (comma separated)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. React, Node.js, TypeScript, MySQL"
+                      value={newProjData.tech_stack}
+                      onChange={(e) =>
+                        setNewProjData({
+                          ...newProjData,
+                          tech_stack: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label>GitHub Repo URL</label>
+                      <input
+                        type="url"
+                        placeholder="https://github.com/username/project"
+                        value={newProjData.repo_url}
+                        onChange={(e) =>
+                          setNewProjData({
+                            ...newProjData,
+                            repo_url: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Live Demo URL</label>
+                      <input
+                        type="url"
+                        placeholder="https://myproject.app"
+                        value={newProjData.project_url}
+                        onChange={(e) =>
+                          setNewProjData({
+                            ...newProjData,
+                            project_url: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
                 </div>
+
                 <div className="github-modal-footer">
-                  <button type="submit" className="btn-primary" disabled={addProjLoading}>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => setShowAddProjectModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                    disabled={addProjLoading}
+                  >
+                    {addProjLoading ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <Save size={16} />
+                    )}
                     Save Project
                   </button>
                 </div>
@@ -1256,6 +2908,125 @@ export const Profile: React.FC = () => {
           </div>
         )}
 
+        {/* ADD CUSTOM CERTIFICATION MODAL */}
+        {showAddCertModal && (
+          <div className="github-modal-overlay">
+            <div className="github-modal-content">
+              <div className="github-modal-header">
+                <h3>
+                  <Award size={20} className="modal-icon text-emerald-400" />
+                  Add Verified Certification
+                </h3>
+                <button
+                  type="button"
+                  className="close-modal-btn"
+                  onClick={() => setShowAddCertModal(false)}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddCert}>
+                <div className="github-modal-body space-y-4">
+                  {addCertError && (
+                    <div className="github-error-banner">
+                      <AlertCircle size={16} />
+                      <span>{addCertError}</span>
+                    </div>
+                  )}
+
+                  <div className="form-group">
+                    <label>Certification Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. AWS Certified Solutions Architect"
+                      value={newCertData.title}
+                      onChange={(e) =>
+                        setNewCertData({
+                          ...newCertData,
+                          title: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className="form-grid-2">
+                    <div className="form-group">
+                      <label>Issuing Organization *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Amazon Web Services, Coursera, NPTEL"
+                        value={newCertData.issuer}
+                        onChange={(e) =>
+                          setNewCertData({
+                            ...newCertData,
+                            issuer: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Issue Year</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 2024"
+                        value={newCertData.issueYear}
+                        onChange={(e) =>
+                          setNewCertData({
+                            ...newCertData,
+                            issueYear: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Credential Verification URL</label>
+                    <input
+                      type="url"
+                      placeholder="https://..."
+                      value={newCertData.credentialUrl}
+                      onChange={(e) =>
+                        setNewCertData({
+                          ...newCertData,
+                          credentialUrl: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="github-modal-footer">
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => setShowAddCertModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                    disabled={addCertLoading}
+                  >
+                    {addCertLoading ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <Save size={16} />
+                    )}
+                    Save Certification
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* SKILL ASSESSMENT MODAL */}
         {activeAssessmentSkill && (
           <SkillAssessment
             skillId={activeAssessmentSkill.skillId}
