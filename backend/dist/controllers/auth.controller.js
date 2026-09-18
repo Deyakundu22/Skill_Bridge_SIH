@@ -68,7 +68,11 @@ export const createCaptchaChallenge = () => {
     </svg>
   `;
     const image = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgMarkup)}`;
-    captchaStore.set(id, { answer, expiresAt: Date.now() + 5 * 60 * 1000, prompt: question });
+    captchaStore.set(id, {
+        answer,
+        expiresAt: Date.now() + 5 * 60 * 1000,
+        prompt: question,
+    });
     return { id, question, answer, image };
 };
 export const verifyCaptchaAnswer = (challengeId, submittedAnswer) => {
