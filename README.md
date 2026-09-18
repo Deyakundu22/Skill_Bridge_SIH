@@ -676,19 +676,19 @@ npm run dev
 
 | Role | Email | Password | Account Status |
 | :--- | :--- | :--- | :--- |
-| **Admin** | `admin@skillbridge.edu` | `admin123` | Active / Approved |
-| **Student** | `student@jisuniversity.ac.in` | `student123` | Active |
-| **Industry Partner** | `hr@techcorp.com` | `industry123` | Verified / Approved |
-| **Institution** | `registrar@jisuniversity.ac.in` | `institution123` | Verified / Approved |
+| **Admin** | `admin@mail.com` | `123456` | Active / Approved |
+| **Student** | `dipanjan@example.com` | `123456` | Active |
+| **Industry Partner** | `zoho@mail.com` | `123456` | Verified / Approved |
+| **Institution** | `registrar@jisuniversity.ac.in` | `123456` | Verified / Approved |
 
 ---
 
 ## 21. Deployment Architecture
 
 ```text
-React 19 + Vite Frontend  ──► Deployed on Vercel  (https://skillbridgeportal.vercel.app)
-Express 5 REST Backend    ──► Deployed on Render  (https://skill-bridge-cxcz.onrender.com)
-MySQL 8.0 Database        ──► Hosted on Aiven     (Cloud Database Instance)
+React + Vite Frontend  ──► Deployed on Vercel  (https://skillbridgeportal.vercel.app)
+Express REST Backend    ──► Deployed on Render  (https://skill-bridge-cxcz.onrender.com)
+MySQL Database        ──► Hosted on Aiven     (Cloud Database Instance)
 ```
 
 ---
