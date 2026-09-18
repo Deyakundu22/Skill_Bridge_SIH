@@ -6,10 +6,39 @@ USE skillbridge_db;
 CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
+  username VARCHAR(255) UNIQUE NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  role ENUM('student', 'faculty', 'industry', 'institution') DEFAULT 'student',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  password VARCHAR(255) NOT NULL,
+  role VARCHAR(50) DEFAULT 'Student',
+  institution_id INT NULL,
+  is_email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+  email_verified_at DATETIME NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (institution_id) REFERENCES institutions(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  token_hash VARCHAR(255) NOT NULL UNIQUE,
+  expires_at DATETIME NOT NULL,
+  used_at DATETIME NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_password_reset_tokens_user_id (user_id),
+  INDEX idx_password_reset_tokens_expires_at (expires_at),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS email_verification_tokens (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  token_hash VARCHAR(255) NOT NULL UNIQUE,
+  expires_at DATETIME NOT NULL,
+  used_at DATETIME NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_email_verification_tokens_user_id (user_id),
+  INDEX idx_email_verification_tokens_expires_at (expires_at),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- 2. Skills Master Table

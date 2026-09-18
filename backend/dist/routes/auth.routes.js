@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { signIn, signUp, getMe, getCaptcha, forgotPassword, resetPassword, } from "../controllers/auth.controller.js";
+import { signIn, signUp, getMe, getCaptcha, forgotPassword, resetPassword, sendVerificationEmailHandler, verifyEmail, } from "../controllers/auth.controller.js";
 import { authenticateToken } from "../middlewares/auth.middleware.js";
 const router = Router();
 router.get("/captcha", getCaptcha);
@@ -7,5 +7,8 @@ router.post("/signin", signIn);
 router.post("/signup", signUp);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
+router.post("/send-verification-email", sendVerificationEmailHandler);
+router.post("/verify-email", verifyEmail);
+router.get("/verify-email", verifyEmail);
 router.get("/me", authenticateToken, getMe);
 export default router;

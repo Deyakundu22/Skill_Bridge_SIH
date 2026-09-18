@@ -135,7 +135,9 @@ export const getStudentProfile = async (req, res) => {
             : rawProfile.department || "Software Engineer";
         const calculatedMatchScore = skills.length > 0 ? Math.min(98, 70 + skills.length * 6) : null;
         if (calculatedMatchScore !== rawProfile.career_match_score) {
-            pool.query(`UPDATE student_profiles SET career_match_score = ? WHERE id = ?`, [calculatedMatchScore, studentProfileId]).catch((err) => console.error("Error updating career_match_score in DB:", err));
+            pool
+                .query(`UPDATE student_profiles SET career_match_score = ? WHERE id = ?`, [calculatedMatchScore, studentProfileId])
+                .catch((err) => console.error("Error updating career_match_score in DB:", err));
             profile.career_match_score = calculatedMatchScore;
         }
         res.status(200).json({
@@ -160,15 +162,30 @@ export const updateStudentProfile = async (req, res) => {
     try {
         // Update user full name in users table if changed
         if (name) {
-            await pool.query(`UPDATE users SET name = ? WHERE id = ?`, [name, userId]);
+            await pool.query(`UPDATE users SET name = ? WHERE id = ?`, [
+                name,
+                userId,
+            ]);
         }
-        const cleanInstId = institution_id ? parseInt(String(institution_id)) || null : null;
-        const cleanDob = dob && typeof dob === "string" && dob.trim() !== "" ? dob.split("T")[0] : null;
+        const cleanInstId = institution_id
+            ? parseInt(String(institution_id)) || null
+            : null;
+        const cleanDob = dob && typeof dob === "string" && dob.trim() !== ""
+            ? dob.split("T")[0]
+            : null;
         const cleanCgpa = cgpa ? parseFloat(cgpa) || null : null;
-        const cleanStipendMin = expected_stipend_min ? parseInt(expected_stipend_min) || null : null;
-        const cleanStipendMax = expected_stipend_max ? parseInt(expected_stipend_max) || null : null;
+        const cleanStipendMin = expected_stipend_min
+            ? parseInt(expected_stipend_min) || null
+            : null;
+        const cleanStipendMax = expected_stipend_max
+            ? parseInt(expected_stipend_max) || null
+            : null;
         const rawStudentId = student_id !== undefined ? student_id : studentId;
-        const cleanStudentId = rawStudentId && typeof rawStudentId === "string" && rawStudentId.trim() !== "" ? rawStudentId.trim() : null;
+        const cleanStudentId = rawStudentId &&
+            typeof rawStudentId === "string" &&
+            rawStudentId.trim() !== ""
+            ? rawStudentId.trim()
+            : null;
         await pool.query(`INSERT INTO student_profiles (
         user_id, institution_id, phone, location, dob, gender, bio, degree,
         department, roll_number, student_id, current_sem, cgpa, expected_grad,
@@ -264,7 +281,10 @@ export const fetchGitHubRepos = async (req, res) => {
         let cleanUsername = username;
         // Extract username if a full URL was provided
         if (cleanUsername && cleanUsername.includes("github.com/")) {
-            cleanUsername = cleanUsername.split("github.com/")[1].split("/")[0].trim();
+            cleanUsername = cleanUsername
+                .split("github.com/")[1]
+                .split("/")[0]
+                .trim();
         }
         if (!cleanUsername) {
             res.status(400).json({ error: "GitHub username is required" });
@@ -273,11 +293,13 @@ export const fetchGitHubRepos = async (req, res) => {
         const ghRes = await fetch(`https://api.github.com/users/${encodeURIComponent(cleanUsername)}/repos?sort=updated&per_page=30`, {
             headers: {
                 "User-Agent": "SkillBridge-App",
-                "Accept": "application/vnd.github.v3+json",
+                Accept: "application/vnd.github.v3+json",
             },
         });
         if (ghRes.status === 404) {
-            res.status(404).json({ error: `GitHub user "${cleanUsername}" not found` });
+            res
+                .status(404)
+                .json({ error: `GitHub user "${cleanUsername}" not found` });
             return;
         }
         if (!ghRes.ok) {
@@ -316,7 +338,9 @@ export const fetchGitHubRepos = async (req, res) => {
     }
     catch (error) {
         console.error("fetchGitHubRepos error:", error);
-        res.status(500).json({ error: `Failed to fetch GitHub repos: ${error.message}` });
+        res
+            .status(500)
+            .json({ error: `Failed to fetch GitHub repos: ${error.message}` });
     }
 };
 /**
@@ -331,21 +355,34 @@ export const importGitHubProjects = async (req, res) => {
     try {
         const { repos } = req.body;
         if (!Array.isArray(repos) || repos.length === 0) {
-            res.status(400).json({ error: "At least one project repository must be selected" });
+            res
+                .status(400)
+                .json({ error: "At least one project repository must be selected" });
             return;
         }
         const studentId = await getStudentProfileId(userId);
         for (const repo of repos) {
             const title = repo.name || repo.title || "GitHub Repository";
             const description = repo.description || "Imported from GitHub";
-            const techStack = Array.isArray(repo.tech_stack) ? repo.tech_stack : (repo.language ? [repo.language] : []);
+            const techStack = Array.isArray(repo.tech_stack)
+                ? repo.tech_stack
+                : repo.language
+                    ? [repo.language]
+                    : [];
             const repoUrl = repo.html_url || repo.repo_url || null;
             const projectUrl = repo.homepage || repo.project_url || repoUrl;
             // Avoid duplicating existing projects with same title and student_id
             const [existing] = await pool.query(`SELECT id FROM student_projects WHERE student_id = ? AND title = ?`, [studentId, title]);
             if (existing.length === 0) {
                 await pool.query(`INSERT INTO student_projects (student_id, title, description, tech_stack, status, project_url, repo_url)
-           VALUES (?, ?, ?, ?, 'Completed', ?, ?)`, [studentId, title, description, JSON.stringify(techStack), projectUrl, repoUrl]);
+           VALUES (?, ?, ?, ?, 'Completed', ?, ?)`, [
+                    studentId,
+                    title,
+                    description,
+                    JSON.stringify(techStack),
+                    projectUrl,
+                    repoUrl,
+                ]);
             }
         }
         // Fetch updated projects list
@@ -355,7 +392,9 @@ export const importGitHubProjects = async (req, res) => {
        ORDER BY id DESC`, [studentId]);
         const formatted = updatedProjects.map((p) => ({
             ...p,
-            tech_stack: typeof p.tech_stack === "string" ? JSON.parse(p.tech_stack) : p.tech_stack || [],
+            tech_stack: typeof p.tech_stack === "string"
+                ? JSON.parse(p.tech_stack)
+                : p.tech_stack || [],
         }));
         res.status(200).json({
             message: `Successfully imported ${repos.length} GitHub repository project(s)!`,
@@ -386,7 +425,10 @@ export const addStudentProject = async (req, res) => {
         const stackArray = Array.isArray(tech_stack)
             ? tech_stack
             : typeof tech_stack === "string"
-                ? tech_stack.split(",").map((s) => s.trim()).filter(Boolean)
+                ? tech_stack
+                    .split(",")
+                    .map((s) => s.trim())
+                    .filter(Boolean)
                 : [];
         const [result] = await pool.query(`INSERT INTO student_projects (student_id, title, description, tech_stack, status, project_url, repo_url)
        VALUES (?, ?, ?, ?, ?, ?, ?)`, [
@@ -433,6 +475,8 @@ export const deleteStudentProject = async (req, res) => {
     }
     catch (error) {
         console.error("deleteStudentProject error:", error);
-        res.status(500).json({ error: `Failed to delete project: ${error.message}` });
+        res
+            .status(500)
+            .json({ error: `Failed to delete project: ${error.message}` });
     }
 };
