@@ -3,11 +3,13 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import pool from "../config/db.js";
+import { getResendClient } from "../lib/resend.js";
 import {
   signInSchema,
   signUpSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  verifyEmailTokenSchema,
 } from "../schemas/auth.schema.js";
 import type { RowDataPacket, ResultSetHeader } from "mysql2";
 import type { User } from "../types/user.type.js";
@@ -18,7 +20,17 @@ type CaptchaChallenge = {
   prompt: string;
 };
 
+type EmailSendResult = {
+  success: boolean;
+  error?: string;
+};
+
 const captchaStore = new Map<string, CaptchaChallenge>();
+
+const getFrontendBaseUrl = (): string => {
+  const configured = process.env.FRONTEND_URL || "http://localhost:5173";
+  return configured.replace(/\/$/, "");
+};
 
 const ensurePasswordResetTable = async (): Promise<void> => {
   await pool.query(`
@@ -34,6 +46,177 @@ const ensurePasswordResetTable = async (): Promise<void> => {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `);
+};
+
+const ensureEmailVerificationTable = async (): Promise<void> => {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS email_verification_tokens (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      token_hash VARCHAR(255) NOT NULL UNIQUE,
+      expires_at DATETIME NOT NULL,
+      used_at DATETIME NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_email_verification_tokens_user_id (user_id),
+      INDEX idx_email_verification_tokens_expires_at (expires_at),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  try {
+    await pool.query(`
+      ALTER TABLE users ADD COLUMN is_email_verified BOOLEAN NOT NULL DEFAULT FALSE
+    `);
+  } catch (_error) {
+    // Column already exists
+  }
+
+  try {
+    await pool.query(`
+      ALTER TABLE users ADD COLUMN email_verified_at DATETIME NULL
+    `);
+  } catch (_error) {
+    // Column already exists
+  }
+};
+
+const sendTransactionalEmail = async ({
+  to,
+  subject,
+  html,
+  text,
+}: {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+}): Promise<EmailSendResult> => {
+  const resend = getResendClient();
+
+  if (!resend) {
+    console.warn(
+      "Resend API key is not configured. Skipping email delivery. Set RESEND_API_KEY to enable live email sending.",
+    );
+    return {
+      success: false,
+      error: "Email delivery is not configured on this server.",
+    };
+  }
+
+  try {
+    const fromAddress = process.env.EMAIL_FROM?.trim();
+    if (!fromAddress) {
+      return {
+        success: false,
+        error:
+          "EMAIL_FROM is not configured. Set a verified sender email such as no-reply@yourdomain.com in the backend .env file.",
+      };
+    }
+
+    const response = await resend.emails.send({
+      from: fromAddress,
+      to: [to],
+      subject,
+      html,
+      text,
+    });
+
+    if (response.error) {
+      console.error("Resend email send failed:", response.error);
+      return {
+        success: false,
+        error:
+          // response.error.message ||
+          // "Email delivery failed. Check that your Resend API key and sender are verified.",
+          "Email verification is temporarily unavailable because the email service is not configured. Please contact the project administrator.",
+      };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Resend email exception:", error);
+    return {
+      success: false,
+      error: error.message || "Email delivery failed.",
+    };
+  }
+};
+
+const generateAndStoreToken = async (
+  userId: number,
+  tableName: "password_reset_tokens" | "email_verification_tokens",
+): Promise<string> => {
+  const token = crypto.randomBytes(32).toString("hex");
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
+    .toISOString()
+    .slice(0, 19)
+    .replace("T", " ");
+
+  await pool.query(`DELETE FROM ${tableName} WHERE user_id = ?`, [userId]);
+
+  await pool.query(
+    `INSERT INTO ${tableName} (user_id, token_hash, expires_at) VALUES (?, ?, ?)`,
+    [userId, tokenHash, expiresAt],
+  );
+
+  return token;
+};
+
+const sendPasswordResetEmail = async (
+  user: Pick<User, "id" | "name" | "email">,
+  token: string,
+): Promise<EmailSendResult> => {
+  const resetUrl = `${getFrontendBaseUrl()}/reset-password?token=${encodeURIComponent(token)}`;
+
+  return sendTransactionalEmail({
+    to: user.email,
+    subject: "Reset your SkillBridge password",
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827;">
+        <h2 style="margin-bottom: 12px;">Reset your password</h2>
+        <p>Hello ${user.name || "there"},</p>
+        <p>We received a request to reset the password for your SkillBridge account.</p>
+        <p>
+          <a href="${resetUrl}" style="display:inline-block;padding:12px 18px;background:#2563eb;color:#fff;text-decoration:none;border-radius:8px;">
+            Reset password
+          </a>
+        </p>
+        <p>Or copy this link into your browser:</p>
+        <p>${resetUrl}</p>
+        <p>This link expires in 15 minutes.</p>
+      </div>
+    `,
+    text: `Hello ${user.name || "there"},\n\nReset your SkillBridge password here: ${resetUrl}\n\nThis link expires in 15 minutes.`,
+  });
+};
+
+const sendVerificationEmail = async (
+  user: Pick<User, "id" | "name" | "email">,
+  token: string,
+): Promise<EmailSendResult> => {
+  const verifyUrl = `${getFrontendBaseUrl()}/verify-email?token=${encodeURIComponent(token)}`;
+
+  return sendTransactionalEmail({
+    to: user.email,
+    subject: "Verify your SkillBridge email",
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827;">
+        <h2 style="margin-bottom: 12px;">Verify your email</h2>
+        <p>Hello ${user.name || "there"},</p>
+        <p>Thanks for joining SkillBridge. Please verify your email address to activate your account.</p>
+        <p>
+          <a href="${verifyUrl}" style="display:inline-block;padding:12px 18px;background:#16a34a;color:#fff;text-decoration:none;border-radius:8px;">
+            Verify email
+          </a>
+        </p>
+        <p>Or open this link in your browser:</p>
+        <p>${verifyUrl}</p>
+        <p>This verification link expires in 15 minutes.</p>
+      </div>
+    `,
+    text: `Hello ${user.name || "there"},\n\nVerify your SkillBridge email here: ${verifyUrl}\n\nThis link expires in 15 minutes.`,
+  });
 };
 
 export const createCaptchaChallenge = (): {
@@ -187,9 +370,8 @@ export const forgotPassword = async (
     );
 
     const user = rows && rows.length > 0 ? rows[0] : null;
-
     const genericMessage =
-      "If an account exists for this email, password reset instructions have been generated.";
+      "If an account exists for this email, password reset instructions have been sent.";
 
     if (!user) {
       res.status(200).json({
@@ -199,37 +381,23 @@ export const forgotPassword = async (
       return;
     }
 
-    const token = crypto.randomBytes(32).toString("hex");
-    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
-      .toISOString()
-      .slice(0, 19)
-      .replace("T", " ");
+    const token = await generateAndStoreToken(user.id, "password_reset_tokens");
+    const emailResult = await sendPasswordResetEmail(user, token);
 
-    await pool.query(`DELETE FROM password_reset_tokens WHERE user_id = ?`, [
-      user.id,
-    ]);
-    await pool.query(
-      `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)`,
-      [user.id, tokenHash, expiresAt],
-    );
-
-    const frontendOrigin = (
-      process.env.FRONTEND_URL || "http://localhost:5173"
-    ).replace(/\/$/, "");
-    const resetUrl = `${frontendOrigin}/?resetToken=${encodeURIComponent(token)}`;
+    if (!emailResult.success) {
+      res.status(503).json({
+        success: false,
+        message:
+          emailResult.error ||
+          "Password reset email could not be sent right now. Please try again later.",
+      });
+      return;
+    }
 
     res.status(200).json({
       success: true,
-      message:
-        "Password reset instructions are ready. For this environment, use the reset token below.",
-      resetToken: token,
-      resetUrl,
+      message: genericMessage,
       expiresInMinutes: 15,
-      user: {
-        id: user.id,
-        email: user.email,
-      },
     });
   } catch (error: any) {
     console.error("Forgot password controller error:", error);
@@ -320,6 +488,192 @@ export const resetPassword = async (
   }
 };
 
+export const sendVerificationEmailToUser = async (
+  userId: number,
+): Promise<boolean> => {
+  try {
+    const [rows] = await pool.query<User[]>(
+      `SELECT id, name, email, is_email_verified FROM users WHERE id = ? LIMIT 1`,
+      [userId],
+    );
+
+    if (!rows || rows.length === 0) {
+      return false;
+    }
+
+    const user = rows[0];
+    if (user.is_email_verified) {
+      return true;
+    }
+
+    await ensureEmailVerificationTable();
+    const token = await generateAndStoreToken(
+      user.id,
+      "email_verification_tokens",
+    );
+    const emailResult = await sendVerificationEmail(user, token);
+
+    if (!emailResult.success) {
+      console.warn(
+        `Verification email could not be sent for user ${user.id}: ${emailResult.error}`,
+      );
+      return false;
+    }
+
+    return true;
+  } catch (error: any) {
+    console.error("sendVerificationEmailToUser error:", error);
+    return false;
+  }
+};
+
+export const sendVerificationEmailHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const email =
+      typeof req.body?.email === "string" ? req.body.email.trim() : "";
+
+    if (!email) {
+      res.status(400).json({
+        success: false,
+        message: "Email address is required.",
+      });
+      return;
+    }
+
+    await ensureEmailVerificationTable();
+
+    const [rows] = await pool.query<User[]>(
+      `SELECT id, name, email, is_email_verified FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1`,
+      [email],
+    );
+
+    if (!rows || rows.length === 0) {
+      res.status(200).json({
+        success: true,
+        message:
+          "If an account exists for that email, a verification link has been sent.",
+      });
+      return;
+    }
+
+    const user = rows[0];
+    if (user.is_email_verified) {
+      res.status(200).json({
+        success: true,
+        message: "This email is already verified.",
+      });
+      return;
+    }
+
+    const token = await generateAndStoreToken(
+      user.id,
+      "email_verification_tokens",
+    );
+    const emailResult = await sendVerificationEmail(user, token);
+
+    if (!emailResult.success) {
+      res.status(503).json({
+        success: false,
+        message:
+          emailResult.error ||
+          "Verification email could not be sent right now. Please try again later.",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Verification email sent successfully.",
+    });
+  } catch (error: any) {
+    console.error("sendVerificationEmailHandler error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while sending verification email.",
+    });
+  }
+};
+
+export const verifyEmail = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const result = verifyEmailTokenSchema.safeParse(req.body);
+    const tokenFromQuery =
+      typeof req.query.token === "string" ? req.query.token : "";
+    const token = result.success ? result.data.token : tokenFromQuery;
+
+    if (!token) {
+      res.status(400).json({
+        success: false,
+        message: "Verification token is required.",
+      });
+      return;
+    }
+
+    const tokenHash = crypto
+      .createHash("sha256")
+      .update(token.trim())
+      .digest("hex");
+    await ensureEmailVerificationTable();
+
+    const [tokenRows] = await pool.query<RowDataPacket[]>(
+      `SELECT * FROM email_verification_tokens WHERE token_hash = ? AND used_at IS NULL AND expires_at > NOW() LIMIT 1`,
+      [tokenHash],
+    );
+
+    if (!tokenRows || tokenRows.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: "Verification link is invalid or expired.",
+      });
+      return;
+    }
+
+    const verificationRecord = tokenRows[0];
+    const [userRows] = await pool.query<User[]>(
+      `SELECT id, email, name, is_email_verified FROM users WHERE id = ? LIMIT 1`,
+      [verificationRecord.user_id],
+    );
+
+    if (!userRows || userRows.length === 0) {
+      res.status(404).json({
+        success: false,
+        message: "Associated user account no longer exists.",
+      });
+      return;
+    }
+
+    await pool.query(
+      `UPDATE users SET is_email_verified = TRUE, email_verified_at = NOW() WHERE id = ?`,
+      [verificationRecord.user_id],
+    );
+    await pool.query(
+      `UPDATE email_verification_tokens SET used_at = NOW() WHERE id = ?`,
+      [verificationRecord.id],
+    );
+    await pool.query(
+      `DELETE FROM email_verification_tokens WHERE user_id = ? AND id != ?`,
+      [verificationRecord.user_id, verificationRecord.id],
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Email verified successfully.",
+    });
+  } catch (error: any) {
+    console.error("verifyEmail controller error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while verifying email.",
+    });
+  }
+};
+
 export const signIn = async (req: Request, res: Response): Promise<void> => {
   try {
     const result = signInSchema.safeParse(req.body);
@@ -396,7 +750,7 @@ export const signIn = async (req: Request, res: Response): Promise<void> => {
         username: user.username || user.name,
         email: user.email,
         role: user.role,
-        is_verified: user.is_verified,
+        is_email_verified: Boolean(user.is_email_verified),
       },
     });
   } catch (error: any) {
@@ -533,6 +887,8 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
     ]);
 
     const userId = insertResult.insertId;
+    await ensureEmailVerificationTable();
+    await sendVerificationEmailToUser(userId);
 
     if (lowerRole === "student") {
       try {

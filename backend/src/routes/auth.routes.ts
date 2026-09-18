@@ -6,6 +6,8 @@ import {
   getCaptcha,
   forgotPassword,
   resetPassword,
+  sendVerificationEmailHandler,
+  verifyEmail,
 } from "../controllers/auth.controller.js";
 import { authenticateToken } from "../middlewares/auth.middleware.js";
 
@@ -16,6 +18,9 @@ router.post("/signin", signIn);
 router.post("/signup", signUp);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
+router.post("/send-verification-email", sendVerificationEmailHandler);
+router.post("/verify-email", verifyEmail);
+router.get("/verify-email", verifyEmail);
 router.get("/me", authenticateToken, getMe);
 
 export default router;

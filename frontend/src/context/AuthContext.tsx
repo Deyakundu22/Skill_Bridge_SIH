@@ -6,6 +6,8 @@ export interface User {
   username: string;
   email: string;
   role: string;
+  is_email_verified?: boolean;
+  email_verified_at?: string | null;
   institution?: string;
   institution_id?: number;
 }

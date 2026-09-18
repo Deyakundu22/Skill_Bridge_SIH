@@ -26,9 +26,14 @@ import InstitutionQuestionPage from "./pages/institution/InstitutionQuestionPage
 import CollaborationsPage from "./pages/collaborations/CollaborationsPage";
 import Auth from "./pages/Auth";
 import LandingPage from "./pages/LandingPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
 
 // Protected Route wrapper: Ensures unauthenticated users see Login page first
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const { isAuthenticated } = useAuth();
 
   if (!isAuthenticated) {
@@ -55,7 +60,9 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 // Institution Guard: Ensures only authenticated institution users access institution routes
-const InstitutionRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const InstitutionRoute: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const { isAuthenticated, user } = useAuth();
 
   if (!isAuthenticated) {
@@ -63,7 +70,13 @@ const InstitutionRoute: React.FC<{ children: React.ReactNode }> = ({ children })
   }
 
   const role = user?.role ? user.role.toString().toLowerCase() : "";
-  const allowed = ["institution", "academician", "faculty", "institute", "admin"];
+  const allowed = [
+    "institution",
+    "academician",
+    "faculty",
+    "institute",
+    "admin",
+  ];
   if (!allowed.includes(role)) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -81,7 +94,9 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       return <Navigate to="/admin/dashboard" replace />;
     } else if (role === "industry") {
       return <Navigate to="/industry/profile" replace />;
-    } else if (["institution", "academician", "faculty", "institute"].includes(role)) {
+    } else if (
+      ["institution", "academician", "faculty", "institute"].includes(role)
+    ) {
       return <Navigate to="/institution/dashboard" replace />;
     }
     return <Navigate to="/dashboard" replace />;
@@ -99,7 +114,9 @@ const DashboardRedirect: React.FC = () => {
     return <Navigate to="/admin/dashboard" replace />;
   } else if (role === "industry") {
     return <Navigate to="/industry/profile" replace />;
-  } else if (["institution", "academician", "faculty", "institute"].includes(role)) {
+  } else if (
+    ["institution", "academician", "faculty", "institute"].includes(role)
+  ) {
     return <Navigate to="/institution/dashboard" replace />;
   }
 
@@ -124,6 +141,9 @@ function App() {
 
             {/* Public Root Landing Page */}
             <Route path="/" element={<LandingPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/verify-email" element={<VerifyEmailPage />} />
 
             {/* Protected Dashboard Route */}
             <Route
@@ -333,4 +353,3 @@ function App() {
 }
 
 export default App;
-
