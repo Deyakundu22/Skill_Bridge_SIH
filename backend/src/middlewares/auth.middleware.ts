@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
+import jwt, { Secret } from "jsonwebtoken";
 import type { AuthUser } from "../types/express.js";
 
 export const authenticateToken = (
@@ -20,7 +20,7 @@ export const authenticateToken = (
   try {
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET || "fallback_secret"
+      process.env.JWT_SECRET as Secret
     ) as AuthUser;
     req.user = decoded;
     next();

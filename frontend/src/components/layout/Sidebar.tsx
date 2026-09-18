@@ -19,12 +19,12 @@ import {
 } from "lucide-react";
 
 import { useNavigate, useLocation } from "react-router-dom";
-import SideItem from "../common/SideItem";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 import type { StudentProfileData } from "../../types/profile";
 
 import { API_BASE_URL } from "../../config/api";
+import SideItem from "../common/SideItem";
 
 interface SidebarProps {
   isOpen?: boolean;

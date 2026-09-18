@@ -55,14 +55,14 @@
   --bg-app: #f8fafc;
   --bg-sidebar: #ffffff;
   --bg-topbar: #ffffff;
-  --bg-card: #ffffff;
-  --bg-card-hover: #f1f5f9;
+  --bg-card: #f8f5f5dc;
+  --bg-card-hover: #ffffff;
   --bg-elevated: #ffffff;
 
   /* ── Borders ── */
-  --border-color: #e2e8f0;
+  --border-color: #0367808f;
   --border-color-hover: #cbd5e1;
-  --border-subtle: #f1f5f9;
+  --border-subtle: #1167bc5d;
 
   /* ── Typography ── */
   --text-primary: #0f172a;
